@@ -20,6 +20,13 @@
           ref="bbox"
         />
 
+        <QuaternionTool 
+          v-model="activeTool"
+          :scale="image.scale"
+          @setcursor="setCursor"
+          ref="quaternion"
+        />
+
         <PolygonTool
           v-model="activeTool"
           :scale="image.scale"
@@ -166,6 +173,9 @@
           <div v-if="$refs.bbox != null">
             <BBoxPanel :bbox="$refs.bbox" />
           </div>
+          <div v-if="$refs.quaternion != null">
+            <QuaternionPanel :quaternion="$refs.quaternion" />
+          </div>
           <div v-if="$refs.polygon != null">
             <PolygonPanel :polygon="$refs.polygon" />
           </div>
@@ -235,6 +245,7 @@ import Annotations from "@/models/annotations";
 
 import PolygonTool from "@/components/annotator/tools/PolygonTool";
 import BBoxTool from "@/components/annotator/tools/BBoxTool";
+import QuaternionTool from "@/components/annotator/tools/QuaternionTool";
 import SelectTool from "@/components/annotator/tools/SelectTool";
 import MagicWandTool from "@/components/annotator/tools/MagicWandTool";
 import EraserTool from "@/components/annotator/tools/EraserTool";
@@ -256,6 +267,7 @@ import AnnotateButton from "@/components/annotator/tools/AnnotateButton";
 
 import PolygonPanel from "@/components/annotator/panels/PolygonPanel";
 import BBoxPanel from "@/components/annotator/panels/BBoxPanel";
+import QuaternionPanel from "@/components/annotator/panels/QuaternionPanel";
 import SelectPanel from "@/components/annotator/panels/SelectPanel";
 import MagicWandPanel from "@/components/annotator/panels/MagicWandPanel";
 import BrushPanel from "@/components/annotator/panels/BrushPanel";
@@ -274,6 +286,8 @@ export default {
     CLabel: Label,
     BBoxTool,
     BBoxPanel,
+    QuaternionTool,
+    QuaternionPanel,
     PolygonTool,
     PolygonPanel,
     SelectTool,
@@ -377,6 +391,7 @@ export default {
         mode: this.mode,
         user: {
           bbox: this.$refs.bbox.export(),
+          quaternion: this.$refs.quaternion.export(),
           polygon: this.$refs.polygon.export(),
           eraser: this.$refs.eraser.export(),
           brush: this.$refs.brush.export(),
@@ -565,6 +580,7 @@ export default {
       let refs = this.$refs;
 
       refs.bbox.setPreferences(preferences.bbox || preferences.polygon || {});
+      refs.quaternion.setPreferences(preferences.quaternion || {});
       refs.polygon.setPreferences(preferences.polygon || {});
       refs.select.setPreferences(preferences.select || {});
       refs.magicwand.setPreferences(preferences.magicwand || {});

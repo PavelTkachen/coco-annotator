@@ -77,6 +77,13 @@ export default {
           }
         },
         {
+          default: ["q"],
+          name: "Quaternion Tool",
+          function: () => {
+            this.activeTool = "Quaternion";
+          }
+        },
+        {
           default: ["n"],
           name: "Next Image",
           function: this.nextImage
