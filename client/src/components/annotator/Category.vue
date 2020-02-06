@@ -249,6 +249,7 @@ export default {
         image_id: parent.image.id,
         category_id: this.category.id,
       }).then(response => {
+        console.log("response.data", response.data);
         this.$socket.emit("annotation", {
           action: "create",
           category_id: this.category.id,

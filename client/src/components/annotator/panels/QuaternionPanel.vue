@@ -1,6 +1,6 @@
 <template>
   <div v-show="quaternion.isActive">
-    <PanelButton name="Delete Quaternion" @click="quaternion.deleteBbox" />
+    <PanelButton name="Delete Quaternion" @click="quaternion.deleteQuaternionBbox" />
     <PanelToggle name="Auto Select Color" v-model="quaternion.color.auto" />
     <PanelToggle
       v-show="quaternion.color.auto"

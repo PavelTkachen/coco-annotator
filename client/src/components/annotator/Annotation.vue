@@ -1,8 +1,5 @@
 <template>
-  <div
-    @mouseenter="onMouseEnter"
-    @mouseleave="onMouseLeave"
-  >
+  <div @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
     <li
       v-show="showSideMenu"
       class="list-group-item btn btn-link btn-sm text-left"
@@ -22,29 +19,25 @@
       </div>
 
       <button
-          class="btn btn-sm btn-link collapsed text-left annotation-text"
-          :style="{
+        class="btn btn-sm btn-link collapsed text-left annotation-text"
+        :style="{
             float: 'left',
             width: '70%',
             color: isVisible ? 'white' : 'gray'
           }"
-          aria-expanded="false"
-          :aria-controls="'collapse_keypoints' + annotation.id"
-          @click="onAnnotationClick(!showKeypoints);"
-        >
-        <template v-if="name.length === 0">
-          {{ index + 1 }}
-        </template>
-        <template v-else> {{ name }} </template>
+        aria-expanded="false"
+        :aria-controls="'collapse_keypoints' + annotation.id"
+        @click="onAnnotationClick(!showKeypoints);"
+      >
+        <template v-if="name.length === 0">{{ index + 1 }}</template>
+        <template v-else>{{ name }}</template>
         {{ annotation.name }}
-        <i v-if="isEmpty" style="padding-left: 5px; color: lightgray"
-          >(Empty)</i
-        >
-        <i v-else style="padding-left: 5px; color: lightgray"
-          >(id: {{ annotation.id }})</i
-        >
-
-        </button>
+        <i
+          v-if="isEmpty"
+          style="padding-left: 5px; color: lightgray"
+        >(Empty)</i>
+        <i v-else style="padding-left: 5px; color: lightgray">(id: {{ annotation.id }})</i>
+      </button>
 
       <i
         class="fa fa-gear annotation-icon"
@@ -52,22 +45,18 @@
         data-toggle="modal"
         :data-target="'#annotationSettings' + annotation.id"
       />
-      <i
-        @click="deleteAnnotation"
-        class="fa fa-trash-o annotation-icon"
-        style="float:right"
-      />
+      <i @click="deleteAnnotation" class="fa fa-trash-o annotation-icon" style="float:right" />
     </li>
 
-    <ul v-show="showKeypoints" ref="collapse_keypoints"
-        class="list-group keypoint-list">
-      <li v-for="(kp, index) in keypointListView" :key="index"
-          :style="{'background-color': kp.backgroundColor}"
-          class="list-group-item text-left keypoint-item">
+    <ul v-show="showKeypoints" ref="collapse_keypoints" class="list-group keypoint-list">
+      <li
+        v-for="(kp, index) in keypointListView"
+        :key="index"
+        :style="{'background-color': kp.backgroundColor}"
+        class="list-group-item text-left keypoint-item"
+      >
         <div>
-          <i class="fa fa-map-marker keypoint-icon"
-              :style="{ color: kp.iconColor}"
-              />
+          <i class="fa fa-map-marker keypoint-icon" :style="{ color: kp.iconColor}" />
         </div>
         <a
           @click="onAnnotationKeypointClick(index)"
@@ -77,7 +66,7 @@
             color: 'white'
           }"
         >
-          <span> {{ kp.label }} </span> 
+          <span>{{ kp.label }}</span>
         </a>
         <i
           v-if="kp.visibility !== 0"
@@ -96,24 +85,12 @@
       </li>
     </ul>
 
-    <div
-      class="modal fade"
-      tabindex="-1"
-      role="dialog"
-      :id="'keypointSettings' + annotation.id"
-    >
+    <div class="modal fade" tabindex="-1" role="dialog" :id="'keypointSettings' + annotation.id">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">
-              {{ getKeypointLabel(currentKeypoint) }}
-            </h5>
-            <button
-              type="button"
-              class="close"
-              data-dismiss="modal"
-              aria-label="Close"
-            >
+            <h5 class="modal-title">{{ getKeypointLabel(currentKeypoint) }}</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
@@ -123,32 +100,25 @@
                 <label class="col-sm-3 col-form-label">Visibility</label>
                 <div class="col-sm-8">
                   <select v-model="keypoint.visibility" class="form-control">
-                    <option v-for="(desc, label) in visibilityOptions" 
-                      :key="label" :value="label" :selected="keypoint.visibility == label">{{desc}}</option>
+                    <option
+                      v-for="(desc, label) in visibilityOptions"
+                      :key="label"
+                      :value="label"
+                      :selected="keypoint.visibility == label"
+                    >{{desc}}</option>
                   </select>
                 </div>
               </div>
             </form>
           </div>
           <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              data-dismiss="modal"
-            >
-              Close
-            </button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
           </div>
         </div>
       </div>
     </div>
 
-    <div
-      class="modal fade"
-      tabindex="-1"
-      role="dialog"
-      :id="'annotationSettings' + annotation.id"
-    >
+    <div class="modal fade" tabindex="-1" role="dialog" :id="'annotationSettings' + annotation.id">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
@@ -156,12 +126,7 @@
               {{ index + 1 }}
               <i style="color: darkgray">(id: {{ annotation.id }})</i>
             </h5>
-            <button
-              type="button"
-              class="close"
-              data-dismiss="modal"
-              aria-label="Close"
-            >
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
@@ -187,27 +152,15 @@
                       v-for="option in allCategories"
                       :selected="annotation.category_id === option.value"
                       :key="option.text"
-                    >
-                      {{ option.text }}
-                    </option>
+                    >{{ option.text }}</option>
                   </select>
                 </div>
               </div>
-              <Metadata
-                :metadata="annotation.metadata"
-                ref="metadata"
-                exclude="name"
-              />
+              <Metadata :metadata="annotation.metadata" ref="metadata" exclude="name" />
             </form>
           </div>
           <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              data-dismiss="modal"
-            >
-              Close
-            </button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
           </div>
         </div>
       </div>
@@ -319,7 +272,7 @@ export default {
         milliseconds: 0
       },
       tagRecomputeCounter: 0,
-      visibilityOptions: VisibilityOptions,
+      visibilityOptions: VisibilityOptions
     };
   },
   methods: {
@@ -372,11 +325,15 @@ export default {
         if (this.activeTool !== "Select") return;
         $(`#annotationSettings${this.annotation.id}`).modal("show");
       };
-      this.keypoints = new Keypoints(this.keypointEdges, this.keypointLabels,
-        this.keypointColors, {
+      this.keypoints = new Keypoints(
+        this.keypointEdges,
+        this.keypointLabels,
+        this.keypointColors,
+        {
           annotationId: this.annotation.id,
-          categoryName: this.$parent.category.name,
-        });
+          categoryName: this.$parent.category.name
+        }
+      );
       this.keypoints.radius = this.scale * 6;
       this.keypoints.lineWidth = this.scale * 2;
 
@@ -440,7 +397,7 @@ export default {
       this.$parent.category.annotations.splice(this.index, 1);
       if (this.compoundPath != null) this.compoundPath.remove();
       if (this.keypoints != null) {
-        this.keypoints._keypoints.forEach( keypoint => {
+        this.keypoints._keypoints.forEach(keypoint => {
           this.keypoints.deleteKeypoint(keypoint);
         });
         this.keypoints.remove();
@@ -456,7 +413,7 @@ export default {
     },
     onAnnotationKeypointClick(labelIndex) {
       if (this.isKeypointLabeled(labelIndex)) {
-        this.keypoint.tag = [String(labelIndex+1)];
+        this.keypoint.tag = [String(labelIndex + 1)];
         this.currentKeypoint = this.keypoints._labelled[this.keypoint.tag];
       }
       if (this.isVisible) {
@@ -464,7 +421,7 @@ export default {
       }
     },
     onAnnotationKeypointSettingsClick(labelIndex) {
-      this.keypoint.tag = [String(labelIndex+1)];
+      this.keypoint.tag = [String(labelIndex + 1)];
       let indexLabel = parseInt(String(this.keypoint.tag));
       if (this.keypoints && indexLabel in this.keypoints._labelled) {
         let labelled = this.keypoints._labelled[indexLabel];
@@ -511,9 +468,13 @@ export default {
       this.addUndo(action);
     },
     simplifyPath() {
-      if (this.compoundPath != null && this.compoundPath.isEmpty() && this.keypoints.isEmpty()) {
-          this.deleteAnnotation();
-          return;
+      if (
+        this.compoundPath != null &&
+        this.compoundPath.isEmpty() &&
+        this.keypoints.isEmpty()
+      ) {
+        this.deleteAnnotation();
+        return;
       }
       let simplify = this.simplify;
 
@@ -566,7 +527,7 @@ export default {
         radius: this.scale * 6,
         onClick: event => {
           if (!["Select", "Keypoints"].includes(this.activeTool)) return;
-          
+
           let keypoint = event.target.keypoint;
           // Remove if already selected
           if (keypoint == this.currentKeypoint) {
@@ -615,7 +576,7 @@ export default {
 
       this.keypoints.addKeypoint(keypoint);
       this.isEmpty = this.compoundPath.isEmpty() && this.keypoints.isEmpty();
-      
+
       let unusedLabels = this.notUsedKeypointLabels;
       delete unusedLabels[String(label)];
       let unusedLabelKeys = Object.keys(unusedLabels);
@@ -630,7 +591,7 @@ export default {
         this.keypoint.next.label = nextLabel;
       } else {
         this.keypoint.next.label = -1;
-        this.$emit('keypoints-complete');
+        this.$emit("keypoints-complete");
       }
       this.tagRecomputeCounter++;
     },
@@ -643,8 +604,15 @@ export default {
      * @param {boolean} simplify simplify compound after unite
      * @param {undoable} undoable add an undo action.
      * @param {isBBox} isBBox mark annotation as bbox.
+     * @param {isQuaternionBbox} isQuaternionBbox mark annotation as quaternion.
      */
-    unite(compound, simplify = true, undoable = true, isBBox = false) {
+    unite(
+      compound,
+      simplify = true,
+      undoable = true,
+      isBBox = false,
+      isQuaternionBbox = false
+    ) {
       if (this.compoundPath == null) this.createCompoundPath();
 
       let newCompound = this.compoundPath.unite(compound);
@@ -653,7 +621,8 @@ export default {
       newCompound.onDoubleClick = this.compoundPath.onDoubleClick;
       newCompound.onClick = this.compoundPath.onClick;
       this.annotation.isbbox = isBBox;
-      
+      this.annotation.isquaternionbbox = isQuaternionBbox;
+
       if (undoable) this.createUndoAction("Unite");
 
       this.compoundPath.remove();
@@ -712,6 +681,7 @@ export default {
       let annotationData = {
         id: this.annotation.id,
         isbbox: this.annotation.isbbox,
+        isquaternionbbox: this.annotation.isquaternionbbox,
         color: this.color,
         metadata: metadata
       };
@@ -760,7 +730,7 @@ export default {
       return keypoint && keypoint.keypoints.labels[keypoint.indexLabel - 1];
     },
     isKeypointSelected(tag, index) {
-      return tag == (index + 1);
+      return tag == index + 1;
     },
     isKeypointLabeled(index) {
       return this.keypoints && !!this.keypoints._labelled[index + 1];
@@ -792,14 +762,13 @@ export default {
     activeTool(tool) {
       if (this.isCurrent) {
         this.session.tools.push(tool);
-      
+
         if (tool === "Keypoints") {
           if (!this.showKeypoints) {
             this.showKeypoints = true;
           }
           var labelIndex = -1;
-          for(let i=0; i < this.keypointLabels.length; ++i) {
-            
+          for (let i = 0; i < this.keypointLabels.length; ++i) {
             if (this.isKeypointLabeled(i)) {
               if (labelIndex < 0) {
                 labelIndex = i;
@@ -811,7 +780,7 @@ export default {
           }
 
           if (labelIndex > -1) {
-            this.keypoint.tag = [String(labelIndex+1)];
+            this.keypoint.tag = [String(labelIndex + 1)];
             this.currentKeypoint = this.keypoints._labelled[this.keypoint.tag];
             this.$emit("keypoint-click", labelIndex);
           }
@@ -903,11 +872,11 @@ export default {
     },
     keypointListView() {
       let listView = [];
-      for (let i=0; i < this.keypointLabels.length; ++i) {
+      for (let i = 0; i < this.keypointLabels.length; ++i) {
         let visibility = this.getKeypointVisibility(i);
-        let iconColor = 'rgb(40, 42, 49)';
+        let iconColor = "rgb(40, 42, 49)";
         if (visibility == 1) {
-          iconColor = 'lightgray';
+          iconColor = "lightgray";
         } else if (visibility == 2) {
           iconColor = this.keypointColors[i];
         }
@@ -915,7 +884,7 @@ export default {
           label: this.keypointLabels[i],
           visibility,
           iconColor,
-          backgroundColor: this.getKeypointBackgroundColor(i),
+          backgroundColor: this.getKeypointBackgroundColor(i)
         });
       }
       return listView;
@@ -956,7 +925,7 @@ export default {
       }
 
       return tags;
-    },
+    }
   },
   sockets: {
     annotation(data) {

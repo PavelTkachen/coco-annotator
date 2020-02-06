@@ -229,7 +229,9 @@ def import_annotations(task_id, dataset_id, coco_json):
         # is_crowd = annotation.get('iscrowed', False)
         area = annotation.get('area', 0)
         bbox = annotation.get('bbox', [0, 0, 0, 0])
+        quaternion = annotation.get('quaternion', [0, 0, 0, 0])
         isbbox = annotation.get('isbbox', False)
+        isquaternionBbox = annotation.get('isquaternionBbox', False)
 
         progress += 1
         task.set_progress((progress / total_items) * 100, socket=socket)
@@ -270,16 +272,18 @@ def import_annotations(task_id, dataset_id, coco_json):
                 annotation_model.segmentation = segmentation
                 annotation_model.area = area
                 annotation_model.bbox = bbox
+                annotation_model.quaternion = quaternion
 
             if has_keypoints:
                 annotation_model.keypoints = keypoints
 
             annotation_model.isbbox = isbbox
+            annotation_model.isquaternionBbox= isquaternionBbox
             annotation_model.save()
 
             image_categories.append(category_id)
         else:
-            annotation_model.update(deleted=False, isbbox=isbbox)
+            annotation_model.update(deleted=False, isbbox=isbbox, isquaternionBbox=isquaternionBbox)
             task.info(
                 f"Annotation already exists (i:{image_id}, c:{category_id})")
 

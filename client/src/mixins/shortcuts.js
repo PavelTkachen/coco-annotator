@@ -147,6 +147,12 @@ export default {
           function: this.$refs.bbox.deletePolygon
         },
         {
+          title: "Quaternion Tool Shortcuts",
+          default: ["escape"],
+          name: "Remove Current QuaternionBBox",
+          function: this.$refs.quaternion.deletePolygon
+        },
+        {
           title: "Polygon Tool Shortcuts",
           default: ["escape"],
           name: "Remove Current Polygon",

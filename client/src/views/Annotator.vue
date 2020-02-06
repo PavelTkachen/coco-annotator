@@ -1,26 +1,15 @@
 <template>
   <div style="display: block; height: inherit;">
-    
     <aside v-show="panels.show.left" class="left-panel shadow-lg">
       <div v-show="mode == 'segment'">
         <hr />
 
-        <SelectTool
-          v-model="activeTool"
-          :scale="image.scale"
-          @setcursor="setCursor"
-          ref="select"
-        />
+        <SelectTool v-model="activeTool" :scale="image.scale" @setcursor="setCursor" ref="select" />
         <hr />
 
-        <BBoxTool
-          v-model="activeTool"
-          :scale="image.scale"
-          @setcursor="setCursor"
-          ref="bbox"
-        />
+        <BBoxTool v-model="activeTool" :scale="image.scale" @setcursor="setCursor" ref="bbox" />
 
-        <QuaternionTool 
+        <QuaternionTool
           v-model="activeTool"
           :scale="image.scale"
           @setcursor="setCursor"
@@ -43,30 +32,11 @@
           ref="magicwand"
         />
 
-        <BrushTool
-          v-model="activeTool"
-          :scale="image.scale"
-          @setcursor="setCursor"
-          ref="brush"
-        />
-        <EraserTool
-          v-model="activeTool"
-          :scale="image.scale"
-          @setcursor="setCursor"
-          ref="eraser"
-        />
+        <BrushTool v-model="activeTool" :scale="image.scale" @setcursor="setCursor" ref="brush" />
+        <EraserTool v-model="activeTool" :scale="image.scale" @setcursor="setCursor" ref="eraser" />
 
-        <KeypointTool
-          v-model="activeTool"
-          @setcursor="setCursor"
-          ref="keypoint"
-        />
-        <DEXTRTool
-          v-model="activeTool"
-          :scale="image.scale"
-          @setcursor="setCursor"
-          ref="dextr"
-        />
+        <KeypointTool v-model="activeTool" @setcursor="setCursor" ref="keypoint" />
+        <DEXTRTool v-model="activeTool" :scale="image.scale" @setcursor="setCursor" ref="dextr" />
       </div>
       <hr />
 
@@ -82,7 +52,7 @@
         <ShowAllButton />
         <HideAllButton />
       </div>
-      <hr>
+      <hr />
       <CenterButton />
       <UndoButton />
 
@@ -91,11 +61,7 @@
       <DownloadButton :image="image" />
       <SaveButton />
       <ModeButton v-model="mode" />
-      <SettingsButton
-        :metadata="image.metadata"
-        :commands="commands"
-        ref="settings"
-      />
+      <SettingsButton :metadata="image.metadata" :commands="commands" ref="settings" />
 
       <hr />
       <DeleteButton :image="image" />
@@ -112,29 +78,17 @@
 
       <div v-if="categories.length > 5">
         <div style="padding: 0px 5px">
-          <input
-            v-model="search"
-            class="search"
-            placeholder="Category Search"
-          />
+          <input v-model="search" class="search" placeholder="Category Search" />
         </div>
       </div>
 
-      <div
-        class="sidebar-section"
-        :style="{ 'max-height': mode == 'label' ? '100%' : '57%' }"
-      >
+      <div class="sidebar-section" :style="{ 'max-height': mode == 'label' ? '100%' : '57%' }">
         <p
           v-if="categories.length == 0"
           style="color: lightgray; font-size: 12px"
-        >
-          No categories have been enabled for this image.
-        </p>
+        >No categories have been enabled for this image.</p>
 
-        <div
-          v-show="mode == 'segment'"
-          style="overflow: auto; max-height: 100%"
-        >
+        <div v-show="mode == 'segment'" style="overflow: auto; max-height: 100%">
           <Category
             v-for="(category, index) in categories"
             :key="category.id + '-category'"
@@ -197,33 +151,32 @@
           </div>
 
           <div v-if="$refs.keypoint != null">
-            <KeypointPanel
-              :keypoint="$refs.keypoint"
-              :current-annotation="currentAnnotation"
-            />
+            <KeypointPanel :keypoint="$refs.keypoint" :current-annotation="currentAnnotation" />
           </div>
           <div v-if="$refs.dextr != null">
-            <DEXTRPanel
-              :dextr="$refs.dextr"
-            />
+            <DEXTRPanel :dextr="$refs.dextr" />
           </div>
         </div>
       </div>
     </aside>
 
     <div class="middle-panel" :style="{ cursor: cursor }">
-    <v-touch @pinch="onpinch" @pinchstart="onpinchstart">
-      <div id="frame" class="frame" @wheel="onwheel">
-        <canvas class="canvas" id="editor" ref="image" resize />
-      </div>
-    </v-touch>   
+      <v-touch @pinch="onpinch" @pinchstart="onpinchstart">
+        <div id="frame" class="frame" @wheel="onwheel">
+          <canvas class="canvas" id="editor" ref="image" resize />
+        </div>
+      </v-touch>
     </div>
 
-    <div v-show="annotating.length > 0" class="fixed-bottom alert alert-warning alert-dismissible fade show">
+    <div
+      v-show="annotating.length > 0"
+      class="fixed-bottom alert alert-warning alert-dismissible fade show"
+    >
       <span>
-      This image is being annotated by <b>{{ annotating.join(', ') }}</b>.
+        This image is being annotated by
+        <b>{{ annotating.join(', ') }}</b>.
       </span>
-      
+
       <button type="button" class="close" data-dismiss="alert" aria-label="Close">
         <span aria-hidden="true">&times;</span>
       </button>
@@ -338,12 +291,12 @@ export default {
       current: {
         category: -1,
         annotation: -1,
-        keypoint: -1,
+        keypoint: -1
       },
       hover: {
         category: -1,
         annotation: -1,
-        keypoint: -1,
+        keypoint: -1
       },
       image: {
         raster: {},
@@ -458,8 +411,10 @@ export default {
       let curr_zoom = e.scale * this.pinching.old_zoom;
       let beta = this.paper.view.zoom / curr_zoom;
       let pc = viewPosition.subtract(this.paper.view.center);
-      let a = viewPosition.subtract(pc.multiply(beta)).subtract(this.paper.view.center);  
-      let transform = {zoom: curr_zoom, offset: a}
+      let a = viewPosition
+        .subtract(pc.multiply(beta))
+        .subtract(this.paper.view.center);
+      let transform = { zoom: curr_zoom, offset: a };
       if (transform.zoom < 10 && transform.zoom > 0.01) {
         this.image.scale = 1 / transform.zoom;
         this.paper.view.zoom = transform.zoom;
@@ -639,12 +594,14 @@ export default {
     onCategoryClick(indices) {
       this.current.annotation = indices.annotation;
       this.current.category = indices.category;
-      if (!indices.hasOwnProperty('keypoint')) {
+      if (!indices.hasOwnProperty("keypoint")) {
         indices.keypoint = -1;
       }
       if (indices.keypoint !== -1) {
         this.current.keypoint = indices.keypoint;
-        let ann = this.currentCategory.category.annotations[this.current.annotation];
+        let ann = this.currentCategory.category.annotations[
+          this.current.annotation
+        ];
         let kpTool = this.$refs.keypoint;
         let selectTool = this.$refs.select;
         let category = this.$refs.category[this.current.category];
@@ -658,7 +615,9 @@ export default {
           this.activeTool = selectTool;
           this.activeTool.click();
         } else {
-          this.currentAnnotation.keypoint.next.label = String(indices.keypoint + 1);
+          this.currentAnnotation.keypoint.next.label = String(
+            indices.keypoint + 1
+          );
           this.activeTool = kpTool;
           this.activeTool.click();
         }
@@ -681,9 +640,21 @@ export default {
       return this.$refs.category[index];
     },
     // Current Annotation Operations
-    uniteCurrentAnnotation(compound, simplify = true, undoable = true, isBBox = false) {
+    uniteCurrentAnnotation(
+      compound,
+      simplify = true,
+      undoable = true,
+      isBBox = false,
+      isQuaternionBbox = false
+    ) {
       if (this.currentAnnotation == null) return;
-      this.currentAnnotation.unite(compound, simplify, undoable, isBBox);
+      this.currentAnnotation.unite(
+        compound,
+        simplify,
+        undoable,
+        isBBox,
+        isQuaternionBbox
+      );
     },
     subtractCurrentAnnotation(compound, simplify = true, undoable = true) {
       if (this.currentCategory == null) return;
@@ -703,7 +674,9 @@ export default {
       } else {
         this.current.category += 1;
         if (this.currentKeypoint) {
-          this.currentAnnotation.onAnnotationKeypointClick(this.current.keypoint);
+          this.currentAnnotation.onAnnotationKeypointClick(
+            this.current.keypoint
+          );
         }
       }
     },
@@ -725,9 +698,14 @@ export default {
         this.current.annotation = -1;
       } else {
         this.current.annotation += 1;
-        if (this.currentAnnotation != null && this.currentAnnotation.showKeypoints) {
+        if (
+          this.currentAnnotation != null &&
+          this.currentAnnotation.showKeypoints
+        ) {
           this.current.keypoint = 0;
-          this.currentAnnotation.onAnnotationKeypointClick(this.current.keypoint);
+          this.currentAnnotation.onAnnotationKeypointClick(
+            this.current.keypoint
+          );
         } else {
           this.current.keypoint = -1;
         }
@@ -741,9 +719,15 @@ export default {
         this.decrementCategory();
       } else {
         this.current.annotation -= 1;
-        if (this.currentAnnotation != null && this.currentAnnotation.showKeypoints) {
-          this.current.keypoint = this.currentAnnotation.keypointLabels.length - 1;
-          this.currentAnnotation.onAnnotationKeypointClick(this.current.keypoint);
+        if (
+          this.currentAnnotation != null &&
+          this.currentAnnotation.showKeypoints
+        ) {
+          this.current.keypoint =
+            this.currentAnnotation.keypointLabels.length - 1;
+          this.currentAnnotation.onAnnotationKeypointClick(
+            this.current.keypoint
+          );
         } else {
           this.current.keypoint = -1;
         }
@@ -777,7 +761,10 @@ export default {
         if (this.currentAnnotation != null) {
           if (this.currentKeypoint != null) {
             this.decrementKeypoint();
-          } else if (this.currentAnnotation.showKeypoints && this.current.keypoint == -1) {
+          } else if (
+            this.currentAnnotation.showKeypoints &&
+            this.current.keypoint == -1
+          ) {
             this.decrementKeypoint();
           } else {
             this.decrementAnnotation();
@@ -796,7 +783,10 @@ export default {
         if (this.currentAnnotation != null) {
           if (this.currentKeypoint != null) {
             this.incrementKeypoint();
-          } else if (this.currentAnnotation.showKeypoints && this.current.keypoint == -1) {
+          } else if (
+            this.currentAnnotation.showKeypoints &&
+            this.current.keypoint == -1
+          ) {
             this.incrementKeypoint();
           } else {
             this.incrementAnnotation();
@@ -831,7 +821,9 @@ export default {
         ) {
           this.currentAnnotation.showKeypoints = true;
           this.current.keypoint = 0;
-          this.currentAnnotation.onAnnotationKeypointClick(this.current.keypoint);
+          this.currentAnnotation.onAnnotationKeypointClick(
+            this.current.keypoint
+          );
         }
       }
     },
@@ -933,11 +925,10 @@ export default {
       }
     },
     nextImage() {
-      if(this.image.next != null)
-        this.$refs.filetitle.route(this.image.next);
+      if (this.image.next != null) this.$refs.filetitle.route(this.image.next);
     },
     previousImage() {
-      if(this.image.previous != null)
+      if (this.image.previous != null)
         this.$refs.filetitle.route(this.image.previous);
     }
   },
@@ -1025,10 +1016,11 @@ export default {
       if (this.currentCategory == null) {
         return null;
       }
-      if (this.currentAnnotation == null 
-      || this.currentAnnotation.keypointLabels.length === 0 
-      || !this.currentAnnotation.showKeypoints)
-      {
+      if (
+        this.currentAnnotation == null ||
+        this.currentAnnotation.keypointLabels.length === 0 ||
+        !this.currentAnnotation.showKeypoints
+      ) {
         return null;
       }
       if (this.current.keypoint == -1) {
@@ -1036,7 +1028,9 @@ export default {
       }
       return {
         label: [String(this.current.keypoint + 1)],
-        visibility: this.currentAnnotation.getKeypointVisibility(this.current.keypoint)
+        visibility: this.currentAnnotation.getKeypointVisibility(
+          this.current.keypoint
+        )
       };
     },
     user() {
