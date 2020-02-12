@@ -7,6 +7,57 @@ import { QuaternionBBox } from "@/libs/quaternion";
 import { BBox } from "@/libs/bbox";
 import { mapMutations } from "vuex";
 
+const unit = Object.freeze([1, 0, 0, 0]);
+
+function norm(vec) {
+  return vec.reduce(function(s, e) {
+    return s + e * e;
+  }, 0);
+}
+
+function distance(vec) {
+  return Math.sqrt(norm(vec));
+}
+
+function normalize(vec) {
+  var dist = distance(vec);
+  // assert(dist !== 0);
+  return vec.map(function(e) {
+    return e / dist;
+  });
+}
+
+function mult(a, b) {
+  return [
+    a[0] * b[0] - a[1] * b[1] - a[2] * b[2] - a[3] * b[3],
+    a[0] * b[1] + a[1] * b[0] + a[2] * b[3] - a[3] * b[2],
+    a[0] * b[2] + a[2] * b[0] + a[3] * b[1] - a[1] * b[3],
+    a[0] * b[3] + a[3] * b[0] + a[1] * b[2] - a[2] * b[1]
+  ];
+}
+
+function a2q(axis, phi) {
+  var cos = Math.cos(phi / 2);
+  var sin = Math.sin(phi / 2);
+  var normal = normalize(axis);
+  return [cos, sin * normal[0], sin * normal[1], sin * normal[2]];
+}
+
+function rot(vec, q) {
+  var qv0 = -q[1] * vec[0] - q[2] * vec[1] - q[3] * vec[2];
+  var qv1 = q[0] * vec[0] + q[2] * vec[2] - q[3] * vec[1];
+  var qv2 = q[0] * vec[1] + q[3] * vec[0] - q[1] * vec[2];
+  var qv3 = q[0] * vec[2] + q[1] * vec[1] - q[2] * vec[0];
+  var r1 = qv0 * -q[1] + qv1 * q[0] + qv2 * -q[3] - qv3 * -q[2];
+  var r2 = qv0 * -q[2] + qv2 * q[0] + qv3 * -q[1] - qv1 * -q[3];
+  var r3 = qv0 * -q[3] + qv3 * q[0] + qv1 * -q[2] - qv2 * -q[1];
+  return [r1, r2, r3];
+}
+
+function def() {
+  return a2q([1, 1, 0], 0.2);
+}
+
 export default {
   name: "QuaternionTool",
   mixins: [tool],
@@ -27,6 +78,21 @@ export default {
       scaleFactor: 3,
       cursor: "copy",
       quaternionBbox: null,
+      context: {
+        offset_x: null,
+        offset_y: null,
+        group: null,
+        difference: {},
+        q: def(),
+        tf: unit,
+        circle_small: null,
+        circle_big: null,
+        z_axis: null,
+        x_axis: null,
+        y_axis: null,
+        flag: false,
+        begin: null
+      },
       polygon: {
         path: null,
         guidance: true,
@@ -73,125 +139,207 @@ export default {
       this.color.auto = pref.auto || this.color.auto;
       this.color.radius = pref.radius || this.color.radius;
     },
-
-    norm(vec) {
-      return vec.reduce(function(s, e) {
-        return s + e * e;
-      }, 0);
+    getDist(pointEvent, pointBegin) {
+      let length = Math.sqrt(
+        Math.pow(pointBegin.x - pointEvent.x, 2) +
+          Math.pow(pointBegin.y - pointEvent.y, 2)
+      );
+      return length / 100.0;
     },
-    distance(vec) {
-      return Math.sqrt(this.norm(vec));
+    deSelect() {
+      let context = this.context;
+      context.group.onMouseDown = function() {
+        context.group.removeChildren(4);
+      };
     },
+    select() {
+      let context = this.context;
+      let unit_x = [1, 0, 0];
+      let unit_y = [0, 0, 1];
+      let unit_z = [0, 1, 0];
+      context.circle_big = new paper.Path.Circle(
+        new paper.Point(context.offset_x, context.offset_y),
+        150
+      );
+      context.circle_big.fillColor = "black";
+      context.circle_big.opacity = 0.3;
+      context.circle_big.data.type = "quaternion";
+      context.group.addChild(context.circle_big);
+      context.group.onMouseDown = function(event) {
+        context.begin = event.point;
+        context.flag = true;
+      };
+      context.group.onMouseMove = function(event) {
+        if (context.flag) {
+          let xZnak = context.begin.x - event.point.x;
+          let yZnak = context.begin.y - event.point.y;
+          let sum = xZnak + yZnak;
+          let diff = this.getDist(event.point, context.begin);
+          diff = sum < 0 ? -diff : diff;
+          if (event.modifiers.control) {
+            context.tf = a2q(unit_x, diff);
+          } else if (event.modifiers.shift) {
+            context.tf = a2q(unit_y, diff);
+          } else {
+            context.tf = a2q(unit_z, diff);
+          }
+          let tq = mult(context.q, context.tf);
+          let x = rot([1, 0, 0], tq);
+          let y = rot([0, 1, 0], tq);
+          let z = rot([0, 0, 1], tq);
+          let draw_x = new paper.Point(
+            x[0] * 100 + context.offset_x,
+            x[1] * 100 + context.offset_y
+          );
+          let draw_y = new paper.Point(
+            y[0] * 100 + context.offset_x,
+            y[1] * 100 + context.offset_y
+          );
+          let draw_z = new paper.Point(
+            z[0] * 100 + context.offset_x,
+            z[1] * 100 + context.offset_y
+          );
+          context.z_axis.removeSegment(1);
+          context.z_axis.add(draw_y);
 
-    normalize(vec) {
-      var dist = this.distance(vec);
-      // assert(dist !== 0);
-      return vec.map(function(e) {
-        return e / dist;
-      });
+          context.x_axis.removeSegment(1);
+          context.x_axis.add(draw_x);
+
+          context.y_axis.removeSegment(1);
+          context.y_axis.add(draw_z);
+        }
+      }.bind(this);
+
+      context.group.onMouseUp = function() {
+        event.stopPropagation();
+        context.q = mult(context.q, context.tf);
+        context.tf = unit;
+        context.flag = false;
+      }.bind(this);
+
+      context.group.onMouseOut = function() {
+        event.stopPropagation();
+        context.flag = false;
+      }.bind(this);
+      // context.group.onMouseDrag = function(event) {
+      //   // let diff = this.getDist(event.point, context.begin);
+      //   let diff = event.delta.length / 100;
+      //   if (event.modifiers.control) {
+      //     context.tf = a2q(unit_x, diff);
+      //   } else if (event.modifiers.shift) {
+      //     context.tf = a2q(unit_y, diff);
+      //   } else {
+      //     context.tf = a2q(unit_z, diff);
+      //   }
+      //   let tq = mult(context.q, context.tf);
+      //   let x = rot([1, 0, 0], tq);
+      //   let y = rot([0, 1, 0], tq);
+      //   let z = rot([0, 0, 1], tq);
+      //   let draw_x = new paper.Point(
+      //     x[0] * 100 + context.offset_x,
+      //     x[1] * 100 + context.offset_y
+      //   );
+      //   let draw_y = new paper.Point(
+      //     y[0] * 100 + context.offset_x,
+      //     y[1] * 100 + context.offset_y
+      //   );
+      //   let draw_z = new paper.Point(
+      //     z[0] * 100 + context.offset_x,
+      //     z[1] * 100 + context.offset_y
+      //   );
+      //   context.z_axis.removeSegment(1);
+      //   context.z_axis.add(draw_y);
+
+      //   context.x_axis.removeSegment(1);
+      //   context.x_axis.add(draw_x);
+
+      //   context.y_axis.removeSegment(1);
+      //   context.y_axis.add(draw_z);
+      // }.bind(this);
     },
-
-    mult(a, b) {
-      return [
-        a[0] * b[0] - a[1] * b[1] - a[2] * b[2] - a[3] * b[3],
-        a[0] * b[1] + a[1] * b[0] + a[2] * b[3] - a[3] * b[2],
-        a[0] * b[2] + a[2] * b[0] + a[3] * b[1] - a[1] * b[3],
-        a[0] * b[3] + a[3] * b[0] + a[1] * b[2] - a[2] * b[1]
-      ];
-    },
-
-    a2q(axis, phi) {
-      var cos = Math.cos(phi / 2);
-      var sin = Math.sin(phi / 2);
-      var normal = this.normalize(axis);
-      return [cos, sin * normal[0], sin * normal[1], sin * normal[2]];
-    },
-
-    rot(vec, q) {
-      var qv0 = -q[1] * vec[0] - q[2] * vec[1] - q[3] * vec[2];
-      var qv1 = q[0] * vec[0] + q[2] * vec[2] - q[3] * vec[1];
-      var qv2 = q[0] * vec[1] + q[3] * vec[0] - q[1] * vec[2];
-      var qv3 = q[0] * vec[2] + q[1] * vec[1] - q[2] * vec[0];
-      var r1 = qv0 * -q[1] + qv1 * q[0] + qv2 * -q[3] - qv3 * -q[2];
-      var r2 = qv0 * -q[2] + qv2 * q[0] + qv3 * -q[1] - qv1 * -q[3];
-      var r3 = qv0 * -q[3] + qv3 * q[0] + qv1 * -q[2] - qv2 * -q[1];
-      return [r1, r2, r3];
-    },
-
     init(point) {
-      let def = () => this.a2q([1, 1, 0], 0.2);
-      let q = def();
-      let tf = Object.freeze([1, 0, 0, 0]);
-
-      let offset_x = point.x;
-      let offset_y = point.y;
-      let tq = this.mult(q, tf);
-      let x = this.rot([1, 0, 0], tq);
-      let y = this.rot([0, 1, 0], tq);
-      let z = this.rot([0, 0, 1], tq);
+      let context = this.context;
+      context.offset_x = point.x;
+      context.offset_y = point.y;
+      let tq = context.q;
+      let x = rot([1, 0, 0], tq);
+      let y = rot([0, 1, 0], tq);
+      let z = rot([0, 0, 1], tq);
 
       let draw_x = [x[0] * 100, x[1] * 100];
       let draw_y = [y[0] * 100, y[1] * 100];
       let draw_z = [z[0] * 100, z[1] * 100];
 
-      let path = new paper.Path(
-        [offset_x, offset_y],
-        [offset_x - draw_x[0], offset_y - draw_x[1]]
+      context.z_axis = new paper.Path(
+        [context.offset_x, context.offset_y],
+        [context.offset_x - draw_x[0], context.offset_y - draw_x[1]]
       );
-      path.strokeColor = "red";
+      context.z_axis.strokeColor = "green";
+      context.z_axis.strokeWidth = 3;
+      context.z_axis.selected = false;
 
-      let path2 = new paper.Path(
-        [offset_x, offset_y],
-        [offset_x - draw_y[0], offset_y - draw_y[1]]
+      context.x_axis = new paper.Path(
+        [context.offset_x, context.offset_y],
+        [context.offset_x - draw_y[0], context.offset_y - draw_y[1]]
       );
-      path2.strokeColor = "green";
+      context.x_axis.strokeColor = "red";
+      context.x_axis.strokeWidth = 3;
+      context.x_axis.selected = false;
 
-      let path3 = new paper.Path(
-        [offset_x, offset_y],
-        [draw_z[0] + offset_x, draw_z[1] + offset_y]
+      context.y_axis = new paper.Path(
+        [context.offset_x, context.offset_y],
+        [draw_z[0] + context.offset_x, draw_z[1] + context.offset_y]
       );
-      path3.strokeColor = "blue";
+      context.y_axis.strokeColor = "blue";
+      context.y_axis.strokeWidth = 3;
+      context.y_axis.selected = false;
 
-      let circle = new paper.Path.Circle(
-        new paper.Point(offset_x, offset_y),
+      context.circle_small = new paper.Path.Circle(
+        new paper.Point(context.offset_x, context.offset_y),
         10
       );
-      circle.strokeColor = "red";
+      context.circle_small.fillColor = "red";
+      context.circle_small.selected = false;
 
-      let circle1 = new paper.Path.Circle(
-        new paper.Point(offset_x, offset_y),
-        150
-      );
-
-      circle1.fillColor = "black";
-      circle1.opacity = 0;
-      let group = new paper.Group([path, path2, path3, circle, circle1]);
+      let group = new paper.Group([
+        context.circle_small,
+        context.z_axis,
+        context.x_axis,
+        context.y_axis
+      ]);
+      group.children.forEach(child => {
+        child.data.type = "quaternion";
+      });
+      context.group = group;
+      context.group.data.group = group;
+      context.group.data.select = this.select.bind(this);
+      context.group.data.deSelect = this.deSelect.bind(this);
+      context.group.data.centerCoords = [context.offset_x, context.offset_y];
       return group;
     },
-
     createBBox(event) {
       this.polygon.path = new paper.Path(this.polygon.pathOptions);
       this.bbox = new BBox(event.point);
       this.bbox.getPoints().forEach(point => this.polygon.path.add(point));
     },
-
-    createQuaternionBBox(event) {
-      this.quaternion.path = this.init(event.point);
-      this.quaternionBbox = new QuaternionBBox(event.point);
-      this.quaternionBbox
-        .getPoints()
-        .forEach(point => this.polygon.path.add(point));
-    },
-
-    modifyQuaternionBBox(event) {
-      this.quaternion.path = this.init(event.point);
-    },
-
     modifyBBox(event) {
       this.polygon.path = new paper.Path(this.polygon.pathOptions);
       this.bbox.modifyPoint(event.point);
       this.bbox.getPoints().forEach(point => this.polygon.path.add(point));
     },
+
+    createQuaternionBBox(event) {
+      this.quaternion.path = this.init(this.bbox.getPoints()[0]);
+      this.quaternionBbox = new QuaternionBBox(event.point);
+      this.quaternionBbox
+        .getPoints()
+        .forEach(point => this.polygon.path.add(point));
+    },
+    modifyQuaternionBBox(event) {
+      this.quaternion.path = this.init(this.bbox.getPoints()[5]);
+      this.quaternionBbox.modifyPoint(event.point);
+    },
+
     /**
      * Frees current quaternionBbox
      */

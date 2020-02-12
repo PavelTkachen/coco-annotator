@@ -20,6 +20,9 @@ export default {
       point: null,
       segment: null,
       scaleFactor: 15,
+      context: {
+        currentQuaternion: null
+      },
       edit: {
         indicatorWidth: 0,
         indicatorSize: 0,
@@ -173,14 +176,38 @@ export default {
       let annotationId = paperObject.data.annotationId;
       let categoryId = paperObject.data.categoryId;
       let category = this.$parent.getCategory(categoryId);
+      if (!category) return;
       let annotation = category.getAnnotation(annotationId);
       return annotation.annotation.isbbox;
     },
+    getCurrentQuaternion(obj) {
+      if (obj.data.group) {
+        return obj;
+      }
+      if (obj.parent !== null) {
+        return this.getCurrentQuaternion(obj.parent);
+      } else return obj;
+    },
+
     onMouseDown(event) {
       let hitResult = this.$parent.paper.project.hitTest(
         event.point,
         this.hitOptions
       );
+      let context = this.context;
+
+      if (hitResult) {
+        context.currentQuaternion = this.getCurrentQuaternion(hitResult.item);
+        if (hitResult.item.data.type) {
+          if (!context.currentQuaternion.selected) {
+            context.currentQuaternion.selected = true;
+            context.currentQuaternion.data.select();
+            context.currentQuaternion.bringToFront();
+          }
+          return;
+        }
+        context.currentQuaternion.selected = false;
+      }
 
       if (!hitResult) return;
 
@@ -192,6 +219,7 @@ export default {
       }
       let path = hitResult.item;
       let paperObject = null;
+
       if (hitResult.type === "segment") {
         this.segment = hitResult.segment;
         paperObject = path.parent;
@@ -234,17 +262,32 @@ export default {
       this.point.indicator = true;
     },
     onMouseDrag(event) {
+      let hitResult = this.$parent.paper.project.hitTest(
+        event.point,
+        this.hitOptions
+      );
+      let context = this.context;
+      if (hitResult) {
+        event.stopPropagation();
+        if (hitResult.item.data.type) {
+          return;
+        }
+      }
+
       if (this.isBbox && this.moveObject) {
         let delta_x = this.initPoint.x - event.point.x;
         let delta_y = this.initPoint.y - event.point.y;
+        console.log(delta_x)
         let segments = this.moveObject.children[0].segments;
         segments.forEach(segment => {
           let p = segment.point;
           segment.point = new paper.Point(p.x - delta_x, p.y - delta_y);
         });
         this.initPoint = event.point;
+        //context.currentQuaternion.position ++;
       }
       if (this.segment && this.edit.canMove) {
+        context.currentQuaternion.sendToBack();
         this.createPoint(event.point);
         if (this.isBbox) {
           //counter clockwise prev and next.
@@ -260,36 +303,36 @@ export default {
         } //getbbox here somehow
         this.segment.point = event.point;
       }
-      else if (!this.keypoint) {
-        // the event point exists on a relative coordinate system (dependent on screen dimensions) 
-        // however, the image on the canvas paper exists on an absolute coordinate system
-        // thus, tracking mouse deltas from the previous point is necessary
-        let delta_x = this.initPoint.x - event.point.x;
-        let delta_y = this.initPoint.y - event.point.y;
-        let center_delta = new paper.Point(delta_x, delta_y);
-        let new_center = this.$parent.paper.view.center.add(center_delta);
-        this.$parent.paper.view.setCenter(new_center);
-      }
-      
+      // else if (!this.keypoint) {
+      //   // the event point exists on a relative coordinate system (dependent on screen dimensions)
+      //   // however, the image on the canvas paper exists on an absolute coordinate system
+      //   // thus, tracking mouse deltas from the previous point is necessary
+      //   let delta_x = this.initPoint.x - event.point.x;
+      //   let delta_y = this.initPoint.y - event.point.y;
+      //   let center_delta = new paper.Point(delta_x, delta_y);
+      //   let new_center = this.$parent.paper.view.center.add(center_delta);
+      //   this.$parent.paper.view.setCenter(new_center);
+      // }
     },
 
-    onMouseUp(event) {
+    onMouseUp() {
       this.clear();
     },
 
     onMouseMove(event) {
-      // ensures that the initPoint is always tracked. 
+      // ensures that the initPoint is always tracked.
       // Necessary for the introduced pan functionality and fixes a bug with selecting and dragging bboxes, since initPoint is initially undefined
-      this.initPoint = event.point;  
-
+      this.initPoint = event.point;
       let hitResult = this.$parent.paper.project.hitTest(
         event.point,
         this.hitOptions
       );
-
       if (hitResult) {
+        if (hitResult.item.data.type) {
+          return;
+        }
         let point = null;
-
+        if (hitResult.item.data.type) return;
         if (hitResult.type === "segment") {
           point = hitResult.segment.location.point;
         } else if (hitResult.type === "stroke") {
@@ -310,7 +353,7 @@ export default {
       this.$parent.hover.annotation = -1;
       this.$parent.hover.category = -1;
 
-      this.$parent.paper.project.activeLayer.selected = false;
+      //this.$parent.paper.project.activeLayer.selected = false;
       let item = event.item;
 
       this.keypoint = null;

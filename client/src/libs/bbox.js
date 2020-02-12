@@ -15,6 +15,10 @@ export class BBox {
         this.point2 = new Point(point);
         this.point1_2 = new Point({x: this.point1.x, y: this.point2.y});
         this.point2_1 = new Point({x: this.point2.x, y: this.point1.y});
+        this.point3 = new Point({
+            x: (this.point2.x + this.point1.x) / 2,
+            y: (this.point2.y + this.point1.y) / 2
+        });
     }
 
     modifyPoint(point){
@@ -32,6 +36,7 @@ export class BBox {
         points[2] = this.point2;
         points[3] = this.point2_1;
         points[4] = this.point1;
+        points[5] = this.point3;
         return points;
     }
 
