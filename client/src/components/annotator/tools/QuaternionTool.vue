@@ -79,6 +79,7 @@ export default {
       cursor: "copy",
       quaternionBbox: null,
       context: {
+        actualQuaternion: [],
         offset_x: null,
         offset_y: null,
         group: null,
@@ -157,14 +158,16 @@ export default {
       let unit_x = [1, 0, 0];
       let unit_y = [0, 0, 1];
       let unit_z = [0, 1, 0];
-      context.circle_big = new paper.Path.Circle(
-        new paper.Point(context.offset_x, context.offset_y),
-        150
-      );
-      context.circle_big.fillColor = "black";
-      context.circle_big.opacity = 0.3;
-      context.circle_big.data.type = "quaternion";
-      context.group.addChild(context.circle_big);
+      if (context.group.children.length !== 5) {
+        context.circle_big = new paper.Path.Circle(
+          new paper.Point(context.offset_x, context.offset_y),
+          150
+        );
+        context.circle_big.fillColor = "black";
+        context.circle_big.opacity = 0.3;
+        context.circle_big.data.type = "quaternion";
+        context.group.addChild(context.circle_big);
+      }
       context.group.onMouseDown = function(event) {
         context.begin = event.point;
         context.flag = true;
@@ -208,6 +211,7 @@ export default {
           context.y_axis.removeSegment(1);
           context.y_axis.add(draw_z);
         }
+        context.actualQuaternion = context.q;
       }.bind(this);
 
       context.group.onMouseUp = function() {
@@ -221,43 +225,10 @@ export default {
         event.stopPropagation();
         context.flag = false;
       }.bind(this);
-      // context.group.onMouseDrag = function(event) {
-      //   // let diff = this.getDist(event.point, context.begin);
-      //   let diff = event.delta.length / 100;
-      //   if (event.modifiers.control) {
-      //     context.tf = a2q(unit_x, diff);
-      //   } else if (event.modifiers.shift) {
-      //     context.tf = a2q(unit_y, diff);
-      //   } else {
-      //     context.tf = a2q(unit_z, diff);
-      //   }
-      //   let tq = mult(context.q, context.tf);
-      //   let x = rot([1, 0, 0], tq);
-      //   let y = rot([0, 1, 0], tq);
-      //   let z = rot([0, 0, 1], tq);
-      //   let draw_x = new paper.Point(
-      //     x[0] * 100 + context.offset_x,
-      //     x[1] * 100 + context.offset_y
-      //   );
-      //   let draw_y = new paper.Point(
-      //     y[0] * 100 + context.offset_x,
-      //     y[1] * 100 + context.offset_y
-      //   );
-      //   let draw_z = new paper.Point(
-      //     z[0] * 100 + context.offset_x,
-      //     z[1] * 100 + context.offset_y
-      //   );
-      //   context.z_axis.removeSegment(1);
-      //   context.z_axis.add(draw_y);
-
-      //   context.x_axis.removeSegment(1);
-      //   context.x_axis.add(draw_x);
-
-      //   context.y_axis.removeSegment(1);
-      //   context.y_axis.add(draw_z);
-      // }.bind(this);
+      this.quaternionBbox = context.actualQuaternion;
+      context.group.data.actualQuaternion = context.actualQuaternion;
     },
-    init(point) {
+    createGroup(point) {
       let context = this.context;
       context.offset_x = point.x;
       context.offset_y = point.y;
@@ -314,7 +285,7 @@ export default {
       context.group.data.group = group;
       context.group.data.select = this.select.bind(this);
       context.group.data.deSelect = this.deSelect.bind(this);
-      context.group.data.centerCoords = [context.offset_x, context.offset_y];
+      context.group.data.actualQuaternion = context.actualQuaternion;
       return group;
     },
     createBBox(event) {
@@ -328,16 +299,17 @@ export default {
       this.bbox.getPoints().forEach(point => this.polygon.path.add(point));
     },
 
-    createQuaternionBBox(event) {
-      this.quaternion.path = this.init(this.bbox.getPoints()[0]);
-      this.quaternionBbox = new QuaternionBBox(event.point);
-      this.quaternionBbox
-        .getPoints()
-        .forEach(point => this.polygon.path.add(point));
+    createQuaternionBBox() {
+      const context = this.context;
+      context.actualQuaternion = context.q;
+      this.quaternion.path = this.createGroup(this.bbox.getPoints()[0]);
+      this.quaternionBbox = context.actualQuaternion;
     },
-    modifyQuaternionBBox(event) {
-      this.quaternion.path = this.init(this.bbox.getPoints()[5]);
-      this.quaternionBbox.modifyPoint(event.point);
+    modifyQuaternionBBox() {
+      const context = this.context;
+      this.quaternion.path = this.createGroup(this.bbox.getPoints()[5]);
+      context.actualQuaternion = context.q;
+      this.quaternionBbox = context.actualQuaternion;
     },
 
     /**

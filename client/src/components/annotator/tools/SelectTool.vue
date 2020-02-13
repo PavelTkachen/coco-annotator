@@ -21,6 +21,7 @@ export default {
       segment: null,
       scaleFactor: 15,
       context: {
+        itemQuaternionType: null,
         currentQuaternion: null
       },
       edit: {
@@ -197,16 +198,20 @@ export default {
       let context = this.context;
 
       if (hitResult) {
-        context.currentQuaternion = this.getCurrentQuaternion(hitResult.item);
+        context.itemQuaternionType = this.getCurrentQuaternion(hitResult.item);
         if (hitResult.item.data.type) {
-          if (!context.currentQuaternion.selected) {
-            context.currentQuaternion.selected = true;
-            context.currentQuaternion.data.select();
-            context.currentQuaternion.bringToFront();
+          if (!context.itemQuaternionType.selected) {
+            context.itemQuaternionType.selected = true;
+            context.itemQuaternionType.data.select();
+            context.itemQuaternionType.bringToFront();
+            context.currentQuaternion = context.itemQuaternionType;
           }
           return;
         }
-        context.currentQuaternion.selected = false;
+        if (context.currentQuaternion && context.currentQuaternion.data) {
+          context.currentQuaternion.data.deSelect();
+        }
+        context.itemQuaternionType.selected = false;
       }
 
       if (!hitResult) return;
@@ -277,17 +282,14 @@ export default {
       if (this.isBbox && this.moveObject) {
         let delta_x = this.initPoint.x - event.point.x;
         let delta_y = this.initPoint.y - event.point.y;
-        console.log(delta_x)
         let segments = this.moveObject.children[0].segments;
         segments.forEach(segment => {
           let p = segment.point;
           segment.point = new paper.Point(p.x - delta_x, p.y - delta_y);
         });
         this.initPoint = event.point;
-        //context.currentQuaternion.position ++;
       }
       if (this.segment && this.edit.canMove) {
-        context.currentQuaternion.sendToBack();
         this.createPoint(event.point);
         if (this.isBbox) {
           //counter clockwise prev and next.
