@@ -79,6 +79,7 @@ export default {
       cursor: "copy",
       quaternionBbox: null,
       context: {
+        quaternions: [],
         actualQuaternion: [],
         offset_x: null,
         offset_y: null,
@@ -128,6 +129,7 @@ export default {
     ...mapMutations(["addUndo", "removeUndos"]),
     export() {
       return {
+        quaternionBbox: this.quaternionBbox,
         completeDistance: this.polygon.completeDistance,
         minDistance: this.polygon.minDistance,
         blackOrWhite: this.color.blackOrWhite,
@@ -146,6 +148,11 @@ export default {
           Math.pow(pointBegin.y - pointEvent.y, 2)
       );
       return length / 100.0;
+    },
+    updateOffset(x, y) {
+      let context = this.context;
+      context.offset_x = x;
+      context.offset_y = y;
     },
     deSelect() {
       let context = this.context;
@@ -215,14 +222,11 @@ export default {
       }.bind(this);
 
       context.group.onMouseUp = function() {
-        event.stopPropagation();
         context.q = mult(context.q, context.tf);
         context.tf = unit;
         context.flag = false;
       }.bind(this);
-
       context.group.onMouseOut = function() {
-        event.stopPropagation();
         context.flag = false;
       }.bind(this);
       this.quaternionBbox = context.actualQuaternion;
@@ -283,8 +287,10 @@ export default {
       });
       context.group = group;
       context.group.data.group = group;
+      context.group.data.groups = context.quaternions;
       context.group.data.select = this.select.bind(this);
       context.group.data.deSelect = this.deSelect.bind(this);
+      context.group.data.updateOffset = this.updateOffset.bind(this);
       context.group.data.actualQuaternion = context.actualQuaternion;
       return group;
     },

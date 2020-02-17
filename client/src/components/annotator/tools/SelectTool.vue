@@ -236,6 +236,12 @@ export default {
         this.moveObject = event.item;
         paperObject = event.item;
       }
+      if (event.item.className == "Group") {
+        this.initPoint = event.point;
+        this.moveObject = event.item;
+        paperObject = event.item;
+        context.moveObjectQuaternion = this.moveObject;
+      }
       this.isBbox = this.checkBbox(paperObject);
       if (this.point != null) {
         this.edit.canMove = this.point.contains(event.point);
@@ -282,29 +288,48 @@ export default {
       if (this.isBbox && this.moveObject) {
         let delta_x = this.initPoint.x - event.point.x;
         let delta_y = this.initPoint.y - event.point.y;
+        let point_x = context.currentQuaternion.data.group.position.x;
+        let point_y = context.currentQuaternion.data.group.position.y;
         let segments = this.moveObject.children[0].segments;
         segments.forEach(segment => {
           let p = segment.point;
           segment.point = new paper.Point(p.x - delta_x, p.y - delta_y);
+          /* работает, но происходит смещение при несуществующем circle_big
+          //
+          // context.currentQuaternion.data.updateOffset(
+          //   point_x - delta_x,
+          //   point_y - delta_y
+          // );
+          */
         });
+        context.currentQuaternion.data.updateOffset(
+          (segments[0].point.x + segments[2].point.x) / 2,
+          (segments[0].point.y + segments[2].point.y) / 2
+        );
         this.initPoint = event.point;
+        context.currentQuaternion.data.group.position = new paper.Point(
+          point_x - delta_x,
+          point_y - delta_y
+        );
+        /* не знаю, понадобится ли в дальнейшем
+        // 
+        // if (this.moveObject.className == "Group") {
+        //   console.log(1);
+        //   let paths = this.moveObject.children;
+        //   paths.forEach(path => {
+        //     let segments = path.segments;
+        //     segments.forEach(segment => {
+        //       let point = segment.point;
+        //       segment.point = new paper.Point(
+        //         point.x + event.delta.x,
+        //         point.y + event.delta.y
+        //       );
+        //     });
+        //   });
+        // }
+        */
       }
-      if (this.segment && this.edit.canMove) {
-        this.createPoint(event.point);
-        if (this.isBbox) {
-          //counter clockwise prev and next.
-          let isCounterClock =
-            this.segment.previous.point.x == this.segment.point.x;
-          let prev = isCounterClock ? this.segment.previous : this.segment.next;
-          let next = !isCounterClock
-            ? this.segment.previous
-            : this.segment.next;
-
-          prev.point = new paper.Point(event.point.x, prev.point.y);
-          next.point = new paper.Point(next.point.x, event.point.y);
-        } //getbbox here somehow
-        this.segment.point = event.point;
-      }
+      
       // else if (!this.keypoint) {
       //   // the event point exists on a relative coordinate system (dependent on screen dimensions)
       //   // however, the image on the canvas paper exists on an absolute coordinate system
@@ -355,7 +380,7 @@ export default {
       this.$parent.hover.annotation = -1;
       this.$parent.hover.category = -1;
 
-      //this.$parent.paper.project.activeLayer.selected = false;
+      this.$parent.paper.project.activeLayer.selected = false;
       let item = event.item;
 
       this.keypoint = null;
