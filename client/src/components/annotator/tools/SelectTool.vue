@@ -22,7 +22,8 @@ export default {
       scaleFactor: 15,
       context: {
         itemQuaternionType: null,
-        currentQuaternion: null
+        currentQuaternion: null,
+        moveObject: null
       },
       edit: {
         indicatorWidth: 0,
@@ -196,10 +197,11 @@ export default {
         this.hitOptions
       );
       let context = this.context;
-
+      //context.currentQuaternion = null;
       if (hitResult) {
         context.itemQuaternionType = this.getCurrentQuaternion(hitResult.item);
         if (hitResult.item.data.type) {
+          context.currentQuaternion = {}
           if (!context.itemQuaternionType.selected) {
             context.itemQuaternionType.selected = true;
             context.itemQuaternionType.data.select();
@@ -329,7 +331,32 @@ export default {
         // }
         */
       }
-      
+
+      context.moveObject = this.moveObject;
+      if (this.segment && this.edit.canMove) {
+        this.createPoint(event.point);
+        if (this.isBbox) {
+          //counter clockwise prev and next.
+          let isCounterClock =
+            this.segment.previous.point.x == this.segment.point.x;
+          let prev = isCounterClock ? this.segment.previous : this.segment.next;
+          let next = !isCounterClock
+            ? this.segment.previous
+            : this.segment.next;
+
+          prev.point = new paper.Point(event.point.x, prev.point.y);
+          next.point = new paper.Point(next.point.x, event.point.y);
+          context.currentQuaternion.data.group.position = new paper.Point(
+            (this.segment.point.x + next.point.x) / 2,
+            (this.segment.point.y + prev.point.y) / 2
+          );
+          context.currentQuaternion.data.updateOffset(
+            (this.segment.point.x + next.point.x) / 2,
+            (this.segment.point.y + prev.point.y) / 2
+          );
+        } //getbbox here somehow
+        this.segment.point = event.point;
+      }
       // else if (!this.keypoint) {
       //   // the event point exists on a relative coordinate system (dependent on screen dimensions)
       //   // however, the image on the canvas paper exists on an absolute coordinate system
