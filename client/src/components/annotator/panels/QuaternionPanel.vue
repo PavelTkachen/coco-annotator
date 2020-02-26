@@ -1,15 +1,15 @@
 <template>
-  <div v-show="quaternion.isActive">
-    <PanelButton name="Delete Quaternion" @click="quaternion.deleteQuaternionBbox" />
-    <PanelToggle name="Auto Select Color" v-model="quaternion.color.auto" />
+  <div v-show="orientation.isActive">
+    <PanelButton name="Delete Quaternion" @click="orientation.deleteQuaternionBbox" />
+    <PanelToggle name="Auto Select Color" v-model="orientation.color.auto" />
     <PanelToggle
-      v-show="quaternion.color.auto"
+      v-show="orientation.color.auto"
       name="Only Black or White"
-      v-model="quaternion.color.blackOrWhite"
+      v-model="orientation.color.blackOrWhite"
     />
     <PanelInputString
       name="Stroke Color"
-      v-model="quaternion.polygon.pathOptions.strokeColor"
+      v-model="orientation.polygon.pathOptions.strokeColor"
     />
   </div>
 </template>
@@ -24,7 +24,7 @@ export default {
   name: "QuaternionPanel",
   components: { PanelButton, PanelToggle, PanelInputString, PanelInputNumber },
   props: {
-    quaternion: {
+    orientation: {
       type: Object,
       required: true
     }

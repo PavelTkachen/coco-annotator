@@ -21,6 +21,7 @@ export default {
       segment: null,
       scaleFactor: 15,
       context: {
+        annotationId: null,
         itemQuaternionType: null,
         currentQuaternion: null,
         moveObject: null
@@ -182,6 +183,25 @@ export default {
       let annotation = category.getAnnotation(annotationId);
       return annotation.annotation.isbbox;
     },
+    checkOrientatnionBbox(paperObject) {
+      if (!paperObject) return false;
+      let annotationId = paperObject.data.annotationId;
+      let categoryId = paperObject.data.categoryId;
+      let category = this.$parent.getCategory(categoryId);
+      if (!category) return;
+      let annotation = category.getAnnotation(annotationId);
+      this.getAnnotationId(category, categoryId, annotationId);
+      let data = {
+        isorientationbbox: annotation.annotation.isorientationbbox,
+        id: this.getAnnotationId(category, categoryId, annotationId)
+      };
+      return data;
+    },
+    getAnnotationId(category, categoryId, annotationId) {
+      let annotation = category.getAnnotation(annotationId);
+      let id = annotation.annotation.id;
+      return id;
+    },
     getCurrentQuaternion(obj) {
       if (obj.data.group) {
         return obj;
@@ -197,24 +217,44 @@ export default {
         this.hitOptions
       );
       let context = this.context;
-      //context.currentQuaternion = null;
-      if (hitResult) {
-        context.itemQuaternionType = this.getCurrentQuaternion(hitResult.item);
-        if (hitResult.item.data.type) {
-          context.currentQuaternion = {}
-          if (!context.itemQuaternionType.selected) {
-            context.itemQuaternionType.selected = true;
-            context.itemQuaternionType.data.select();
-            context.itemQuaternionType.bringToFront();
-            context.currentQuaternion = context.itemQuaternionType;
-          }
-          return;
+      if (hitResult && hitResult.item.data.type) {
+        context.currentQuaternion = this.getCurrentQuaternion(hitResult.item);
+        context.currentQuaternion.bringToFront();
+        this.isorientationbbox = this.checkOrientatnionBbox(
+          context.currentQuaternion
+        ).isorientationbbox;
+        if (this.isorientationbbox) {
+          context.currentQuaternion.data.select();
         }
-        if (context.currentQuaternion && context.currentQuaternion.data) {
-          context.currentQuaternion.data.deSelect();
-        }
-        context.itemQuaternionType.selected = false;
+        return;
       }
+      // if (hitResult) {
+      //   context.itemQuaternionType = this.getCurrentQuaternion(hitResult.item);
+      //   if (hitResult.item.data.type) {
+      //     if (!context.itemQuaternionType.selected) {
+      //       context.itemQuaternionType.selected = true;
+      //       context.itemQuaternionType.data.select();
+      //       context.itemQuaternionType.bringToFront();
+      //       context.currentQuaternion = context.itemQuaternionType;
+      //     }
+      //     if (event.item.className == "Group") {
+      //       this.initPoint = event.point;
+      //       this.moveObject = event.item;
+      //       paperObject = event.item;
+      //       context.moveObjectQuaternion = this.moveObject;
+      //       this.idOrientationBbox = this.checkOrientatnionBbox(paperObject);
+      //     }
+      //     return;
+      //   }
+      // }
+      // if (event.item.className !== "CompoundPath") {
+      //   if (context.currentQuaternion) {
+      //     context.currentQuaternion = null;
+      //   }
+      //   if (context.currentQuaternion && context.currentQuaternion.data) {
+      //     context.currentQuaternion.data.deSelect();
+      //   }
+      // }
 
       if (!hitResult) return;
 
@@ -238,13 +278,12 @@ export default {
         this.moveObject = event.item;
         paperObject = event.item;
       }
-      if (event.item.className == "Group") {
-        this.initPoint = event.point;
-        this.moveObject = event.item;
-        paperObject = event.item;
-        context.moveObjectQuaternion = this.moveObject;
-      }
       this.isBbox = this.checkBbox(paperObject);
+
+      if (this.idOrientationBbox) {
+        paperObject.data.group.bringToFront();
+        paperObject.data.group.selected;
+      }
       if (this.point != null) {
         this.edit.canMove = this.point.contains(event.point);
       } else {
@@ -281,7 +320,6 @@ export default {
       );
       let context = this.context;
       if (hitResult) {
-        event.stopPropagation();
         if (hitResult.item.data.type) {
           return;
         }
@@ -296,14 +334,11 @@ export default {
         segments.forEach(segment => {
           let p = segment.point;
           segment.point = new paper.Point(p.x - delta_x, p.y - delta_y);
-          /* работает, но происходит смещение при несуществующем circle_big
-          //
-          // context.currentQuaternion.data.updateOffset(
-          //   point_x - delta_x,
-          //   point_y - delta_y
-          // );
-          */
         });
+        // if (
+        //   context.annotationId ===
+        //   context.itemQuaternionType.data.parentId - 1
+        // ) {
         context.currentQuaternion.data.updateOffset(
           (segments[0].point.x + segments[2].point.x) / 2,
           (segments[0].point.y + segments[2].point.y) / 2
@@ -313,10 +348,10 @@ export default {
           point_x - delta_x,
           point_y - delta_y
         );
+        // }
         /* не знаю, понадобится ли в дальнейшем
         // 
         // if (this.moveObject.className == "Group") {
-        //   console.log(1);
         //   let paths = this.moveObject.children;
         //   paths.forEach(path => {
         //     let segments = path.segments;

@@ -77,10 +77,10 @@ export default {
       name: "QuaternionBBox",
       scaleFactor: 3,
       cursor: "copy",
-      quaternionBbox: null,
+      orientationBbox: null,
       context: {
-        quaternions: [],
-        actualQuaternion: [],
+        itemId: null,
+        orientations: [],
         offset_x: null,
         offset_y: null,
         group: null,
@@ -103,7 +103,7 @@ export default {
           strokeWidth: 1
         }
       },
-      quaternion: {
+      orientation: {
         path: null,
         guidance: true,
         pathOptions: {
@@ -129,7 +129,7 @@ export default {
     ...mapMutations(["addUndo", "removeUndos"]),
     export() {
       return {
-        quaternionBbox: this.quaternionBbox,
+        orientationBbox: this.orientationBbox,
         completeDistance: this.polygon.completeDistance,
         minDistance: this.polygon.minDistance,
         blackOrWhite: this.color.blackOrWhite,
@@ -160,7 +160,7 @@ export default {
         context.group.removeChildren(4);
       };
     },
-    select() {
+    select(id) {
       let context = this.context;
       let unit_x = [1, 0, 0];
       let unit_y = [0, 0, 1];
@@ -171,8 +171,8 @@ export default {
           150
         );
         context.circle_big.fillColor = "black";
-        context.circle_big.opacity = 0.3;
-        context.circle_big.data.type = "quaternion";
+        context.circle_big.opacity = 0;
+        context.circle_big.data.type = "orientation";
         context.group.addChild(context.circle_big);
       }
       context.group.onMouseDown = function(event) {
@@ -229,8 +229,7 @@ export default {
       context.group.onMouseOut = function() {
         context.flag = false;
       }.bind(this);
-      this.quaternionBbox = context.actualQuaternion;
-      context.group.data.actualQuaternion = context.actualQuaternion;
+      this.orientationBbox = context.actualQuaternion;
     },
     createGroup(point) {
       let context = this.context;
@@ -283,15 +282,17 @@ export default {
         context.y_axis
       ]);
       group.children.forEach(child => {
-        child.data.type = "quaternion";
+        child.data.type = "orientation";
       });
       context.group = group;
       context.group.data.group = group;
-      context.group.data.groups = context.quaternions;
       context.group.data.select = this.select.bind(this);
       context.group.data.deSelect = this.deSelect.bind(this);
       context.group.data.updateOffset = this.updateOffset.bind(this);
-      context.group.data.actualQuaternion = context.actualQuaternion;
+      context.group.data.orientations = context.orientations;
+      context.group.data.annotationId = this.$parent.current.annotation;
+      context.group.data.categoryId = this.$parent.current.category;
+
       return group;
     },
     createBBox(event) {
@@ -306,29 +307,23 @@ export default {
     },
 
     createQuaternionBBox() {
-      const context = this.context;
-      context.actualQuaternion = context.q;
-      this.quaternion.path = this.createGroup(this.bbox.getPoints()[0]);
-      this.quaternionBbox = context.actualQuaternion;
+      this.orientation.path = this.createGroup(this.bbox.getPoints()[0]);
     },
     modifyQuaternionBBox() {
-      const context = this.context;
-      this.quaternion.path = this.createGroup(this.bbox.getPoints()[5]);
-      context.actualQuaternion = context.q;
-      this.quaternionBbox = context.actualQuaternion;
+      this.orientation.path = this.createGroup(this.bbox.getPoints()[5]);
     },
 
     /**
-     * Frees current quaternionBbox
+     * Frees current orientationBbox
      */
     deleteQuaternionBbox() {
       if (this.polygon.path == null) return;
       this.polygon.path.remove();
       this.polygon.path = null;
 
-      if (this.quaternion.path == null) return;
-      this.quaternion.path.remove();
-      this.quaternion.path = null;
+      if (this.orientation.path == null) return;
+      this.orientation.path.remove();
+      this.orientation.path = null;
 
       if (this.color.circle == null) return;
       this.color.circle.remove();
@@ -368,7 +363,21 @@ export default {
       this.modifyBBox(event);
       this.modifyQuaternionBBox(event);
 
-      if (this.completeBBox()) return;
+      if (this.completeBBox()) {
+        let context = this.context;
+        const current = this.$parent.current;
+        const categoryId = current.category;
+        const annotationId = current.annotation;
+        context.itemId = this.$parent.categories[categoryId].annotations[
+          annotationId
+        ].id;
+        this.orientationBbox = {
+          data: context.q,
+          id: context.itemId
+        };
+        context.orientations.push(this.orientationBbox);
+        return;
+      }
     },
     onMouseMove(event) {
       if (this.polygon.path == null) return;
@@ -384,9 +393,9 @@ export default {
       if (this.polygon.path == null) return;
       let points = args.points;
       let length = this.polygon.path.segments.length;
-      let lengthQuaternion = this.quaternion.path.children.length;
+      let lengthQuaternion = this.orientation.path.children.length;
       this.polygon.path.removeSegments(length - points, length);
-      this.quaternion.path.removeChildren(
+      this.orientation.path.removeChildren(
         lengthQuaternion - points,
         lengthQuaternion
       );
@@ -412,14 +421,12 @@ export default {
         this.color.circle.remove();
         this.color.circle = null;
       }
-
       this.removeUndos(this.actionTypes.ADD_POINTS);
-
       return true;
     },
     removeLastBBox() {
       this.polygon.path.removeSegments();
-      this.quaternion.path.removeChildren();
+      this.orientation.path.removeChildren();
     }
   },
   computed: {

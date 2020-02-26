@@ -279,7 +279,6 @@ export default {
     ...mapMutations(["addUndo"]),
     initAnnotation() {
       let metaName = this.annotation.metadata.name;
-
       if (metaName) {
         this.name = metaName;
         delete this.annotation.metadata["name"];
@@ -289,7 +288,6 @@ export default {
         this.compoundPath.remove();
         this.compoundPath = null;
       }
-
       this.createCompoundPath(
         this.annotation.paper_object,
         this.annotation.segmentation
@@ -298,17 +296,14 @@ export default {
     createCompoundPath(json, segments) {
       json = json || null;
       segments = segments || null;
-
       let width = this.annotation.width;
       let height = this.annotation.height;
-
       // Validate json
       if (json != null) {
         if (json.length !== 2) {
           json = null;
         }
       }
-
       // Validate segments
       if (segments != null) {
         if (segments.length === 0) {
@@ -349,7 +344,7 @@ export default {
           this.addKeypoint(new paper.Point(x, y), v, i / 3 + 1);
         }
       }
-
+      //способ загрузки сохраненных элементов при перезагрузке страницы или повторном входе
       if (json != null) {
         // Import data directroy from paperjs object
         this.compoundPath.importJSON(json);
@@ -479,7 +474,6 @@ export default {
       let simplify = this.simplify;
 
       this.compoundPath.flatten(1);
-
       if (this.compoundPath instanceof paper.Path) {
         this.compoundPath = new paper.CompoundPath(this.compoundPath);
         this.compoundPath.data.annotationId = this.index;
@@ -497,7 +491,6 @@ export default {
 
         let newPath = new paper.Path(points);
         newPath.closePath();
-
         newChildren.push(newPath);
       });
 
@@ -604,24 +597,23 @@ export default {
      * @param {boolean} simplify simplify compound after unite
      * @param {undoable} undoable add an undo action.
      * @param {isBBox} isBBox mark annotation as bbox.
-     * @param {isQuaternionBbox} isQuaternionBbox mark annotation as quaternion.
+     * @param {isOrientationBbox} isOrientationBbox mark annotation as orientation.
      */
     unite(
       compound,
       simplify = true,
       undoable = true,
       isBBox = false,
-      isQuaternionBbox = false
+      isOrientationBbox = false
     ) {
       if (this.compoundPath == null) this.createCompoundPath();
-
       let newCompound = this.compoundPath.unite(compound);
       newCompound.strokeColor = null;
       newCompound.strokeWidth = 0;
       newCompound.onDoubleClick = this.compoundPath.onDoubleClick;
       newCompound.onClick = this.compoundPath.onClick;
       this.annotation.isbbox = isBBox;
-      this.annotation.isquaternionbbox = isQuaternionBbox;
+      this.annotation.isorientationbbox = isOrientationBbox;
 
       if (undoable) this.createUndoAction("Unite");
 
@@ -681,18 +673,16 @@ export default {
       let annotationData = {
         id: this.annotation.id,
         isbbox: this.annotation.isbbox,
-        isquaternionbbox: this.annotation.isquaternionbbox,
+        isorientationbbox: this.annotation.isorientationbbox,
         color: this.color,
         metadata: metadata
       };
-
       this.simplifyPath();
       this.compoundPath.fullySelected = false;
       let json = this.compoundPath.exportJSON({
         asString: false,
         precision: 1
       });
-
       if (!this.keypoints.isEmpty()) {
         annotationData.keypoints = this.keypoints.exportJSON(
           this.keypointLabels,
@@ -930,7 +920,6 @@ export default {
   sockets: {
     annotation(data) {
       let annotation = data.annotation;
-
       if (this.uuid == data.uuid) return;
       if (annotation.id != this.annotation.id) return;
 
