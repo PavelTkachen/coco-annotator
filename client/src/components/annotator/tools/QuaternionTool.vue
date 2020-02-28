@@ -3,7 +3,6 @@ import paper from "paper";
 import tool from "@/mixins/toolBar/tool";
 
 import { invertColor } from "@/libs/colors";
-import { QuaternionBBox } from "@/libs/quaternion";
 import { BBox } from "@/libs/bbox";
 import { mapMutations } from "vuex";
 
@@ -79,13 +78,11 @@ export default {
       cursor: "copy",
       orientationBbox: null,
       context: {
-        itemId: null,
-        orientations: [],
         offset_x: null,
         offset_y: null,
-        group: null,
         difference: {},
-        q: def(),
+        q: null,
+        current_q: def(),
         tf: unit,
         circle_small: null,
         circle_big: null,
@@ -149,93 +146,82 @@ export default {
       );
       return length / 100.0;
     },
-    updateOffset(x, y) {
+    updateOffsetOrientation(x, y) {
       let context = this.context;
       context.offset_x = x;
       context.offset_y = y;
     },
-    deSelect() {
+    deSelectOrientation() {
       let context = this.context;
       context.group.onMouseDown = function() {
         context.group.removeChildren(4);
       };
     },
-    select(id) {
-      let context = this.context;
+    selectOrientation(data) {
+      this.context = data.context;
+      let dataset = this.context;
       let unit_x = [1, 0, 0];
       let unit_y = [0, 0, 1];
       let unit_z = [0, 1, 0];
-      if (context.group.children.length !== 5) {
-        context.circle_big = new paper.Path.Circle(
-          new paper.Point(context.offset_x, context.offset_y),
-          150
-        );
-        context.circle_big.fillColor = "black";
-        context.circle_big.opacity = 0;
-        context.circle_big.data.type = "orientation";
-        context.group.addChild(context.circle_big);
-      }
-      context.group.onMouseDown = function(event) {
-        context.begin = event.point;
-        context.flag = true;
+      dataset.group.onMouseDown = function(event) {
+        dataset.begin = event.point;
+        dataset.flag = true;
       };
-      context.group.onMouseMove = function(event) {
-        if (context.flag) {
-          let xZnak = context.begin.x - event.point.x;
-          let yZnak = context.begin.y - event.point.y;
+      dataset.group.onMouseMove = function(event) {
+        if (dataset.flag) {
+          let xZnak = dataset.begin.x - event.point.x;
+          let yZnak = dataset.begin.y - event.point.y;
           let sum = xZnak + yZnak;
-          let diff = this.getDist(event.point, context.begin);
+          let diff = this.getDist(event.point, dataset.begin);
           diff = sum < 0 ? -diff : diff;
           if (event.modifiers.control) {
-            context.tf = a2q(unit_x, diff);
+            dataset.tf = a2q(unit_x, diff);
           } else if (event.modifiers.shift) {
-            context.tf = a2q(unit_y, diff);
+            dataset.tf = a2q(unit_y, diff);
           } else {
-            context.tf = a2q(unit_z, diff);
+            dataset.tf = a2q(unit_z, diff);
           }
-          let tq = mult(context.q, context.tf);
+          let tq = mult(dataset.current_q, dataset.tf);
           let x = rot([1, 0, 0], tq);
           let y = rot([0, 1, 0], tq);
           let z = rot([0, 0, 1], tq);
           let draw_x = new paper.Point(
-            x[0] * 100 + context.offset_x,
-            x[1] * 100 + context.offset_y
+            x[0] * 100 + dataset.offset_x,
+            x[1] * 100 + dataset.offset_y
           );
           let draw_y = new paper.Point(
-            y[0] * 100 + context.offset_x,
-            y[1] * 100 + context.offset_y
+            y[0] * 100 + dataset.offset_x,
+            y[1] * 100 + dataset.offset_y
           );
           let draw_z = new paper.Point(
-            z[0] * 100 + context.offset_x,
-            z[1] * 100 + context.offset_y
+            z[0] * 100 + dataset.offset_x,
+            z[1] * 100 + dataset.offset_y
           );
-          context.z_axis.removeSegment(1);
-          context.z_axis.add(draw_y);
+          dataset.z_axis.removeSegment(1);
+          dataset.z_axis.add(draw_y);
 
-          context.x_axis.removeSegment(1);
-          context.x_axis.add(draw_x);
+          dataset.x_axis.removeSegment(1);
+          dataset.x_axis.add(draw_x);
 
-          context.y_axis.removeSegment(1);
-          context.y_axis.add(draw_z);
+          dataset.y_axis.removeSegment(1);
+          dataset.y_axis.add(draw_z);
         }
-        context.actualQuaternion = context.q;
       }.bind(this);
 
-      context.group.onMouseUp = function() {
-        context.q = mult(context.q, context.tf);
-        context.tf = unit;
-        context.flag = false;
+      dataset.group.onMouseUp = function() {
+        dataset.q = mult(dataset.current_q, dataset.tf);
+        dataset.tf = unit;
+        dataset.flag = false;
       }.bind(this);
-      context.group.onMouseOut = function() {
-        context.flag = false;
+      dataset.group.onMouseOut = function() {
+        dataset.flag = false;
       }.bind(this);
-      this.orientationBbox = context.actualQuaternion;
     },
     createGroup(point) {
       let context = this.context;
       context.offset_x = point.x;
       context.offset_y = point.y;
-      let tq = context.q;
+      let tq = context.current_q;
       let x = rot([1, 0, 0], tq);
       let y = rot([0, 1, 0], tq);
       let z = rot([0, 0, 1], tq);
@@ -250,7 +236,6 @@ export default {
       );
       context.z_axis.strokeColor = "green";
       context.z_axis.strokeWidth = 3;
-      context.z_axis.selected = false;
 
       context.x_axis = new paper.Path(
         [context.offset_x, context.offset_y],
@@ -258,7 +243,6 @@ export default {
       );
       context.x_axis.strokeColor = "red";
       context.x_axis.strokeWidth = 3;
-      context.x_axis.selected = false;
 
       context.y_axis = new paper.Path(
         [context.offset_x, context.offset_y],
@@ -266,16 +250,20 @@ export default {
       );
       context.y_axis.strokeColor = "blue";
       context.y_axis.strokeWidth = 3;
-      context.y_axis.selected = false;
 
       context.circle_small = new paper.Path.Circle(
         new paper.Point(context.offset_x, context.offset_y),
         10
       );
       context.circle_small.fillColor = "red";
-      context.circle_small.selected = false;
-
+      context.circle_big = new paper.Path.Circle(
+        new paper.Point(context.offset_x, context.offset_y),
+        150
+      );
+      context.circle_big.fillColor = "black";
+      context.circle_big.opacity = 0.2;
       let group = new paper.Group([
+        context.circle_big,
         context.circle_small,
         context.z_axis,
         context.x_axis,
@@ -284,16 +272,25 @@ export default {
       group.children.forEach(child => {
         child.data.type = "orientation";
       });
+      this.addedPropsInGroup(group);
+      return group;
+    },
+    addedPropsInGroup(group) {
+      let context = this.context;
       context.group = group;
       context.group.data.group = group;
-      context.group.data.select = this.select.bind(this);
-      context.group.data.deSelect = this.deSelect.bind(this);
-      context.group.data.updateOffset = this.updateOffset.bind(this);
-      context.group.data.orientations = context.orientations;
+      context.group.data.context = context;
+      context.group.data.updateOffsetOrientation = this.updateOffsetOrientation.bind(
+        this
+      );
       context.group.data.annotationId = this.$parent.current.annotation;
       context.group.data.categoryId = this.$parent.current.category;
-
-      return group;
+      context.group.data.annotation = this.$parent.categories[
+        context.group.data.categoryId
+      ].annotations[context.group.data.annotationId];
+      context.group.data.annotation.selectOrientation = this.selectOrientation.bind(
+        this
+      );
     },
     createBBox(event) {
       this.polygon.path = new paper.Path(this.polygon.pathOptions);
@@ -365,17 +362,16 @@ export default {
 
       if (this.completeBBox()) {
         let context = this.context;
+        this.orientationBbox = {
+          data: context.q
+        };
         const current = this.$parent.current;
         const categoryId = current.category;
         const annotationId = current.annotation;
-        context.itemId = this.$parent.categories[categoryId].annotations[
+        let annotation = this.$parent.categories[categoryId].annotations[
           annotationId
-        ].id;
-        this.orientationBbox = {
-          data: context.q,
-          id: context.itemId
-        };
-        context.orientations.push(this.orientationBbox);
+        ];
+        annotation.group = context.group;
         return;
       }
     },
