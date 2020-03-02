@@ -149,18 +149,18 @@ export default {
       );
       return length / 100.0;
     },
-    updateOffset(x, y) {
+    updateOffsetOrientation(x, y) {
       let context = this.context;
       context.offset_x = x;
       context.offset_y = y;
     },
-    deSelect() {
+    deSelectOrientation() {
       let context = this.context;
       context.group.onMouseDown = function() {
         context.group.removeChildren(4);
       };
     },
-    select(id) {
+    selectOrientation() {
       let context = this.context;
       let unit_x = [1, 0, 0];
       let unit_y = [0, 0, 1];
@@ -286,9 +286,13 @@ export default {
       });
       context.group = group;
       context.group.data.group = group;
-      context.group.data.select = this.select.bind(this);
-      context.group.data.deSelect = this.deSelect.bind(this);
-      context.group.data.updateOffset = this.updateOffset.bind(this);
+      context.group.data.selectOrientation = this.selectOrientation.bind(this);
+      context.group.data.deSelectOrientation = this.deSelectOrientation.bind(
+        this
+      );
+      context.group.data.updateOffsetOrientation = this.updateOffsetOrientation.bind(
+        this
+      );
       context.group.data.orientations = context.orientations;
       context.group.data.annotationId = this.$parent.current.annotation;
       context.group.data.categoryId = this.$parent.current.category;

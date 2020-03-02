@@ -197,14 +197,7 @@ export default {
         event.stopPropagation();
         hitResult.item.parent.bringToFront();
         context.active = true;
-        let dataset = this.$parent.categories[
-          hitResult.item.parent.data.categoryId
-        ].annotations[hitResult.item.parent.data.annotationId].group.data;
-        this.$parent.categories[
-          hitResult.item.parent.data.categoryId
-        ].annotations[
-          hitResult.item.parent.data.annotationId
-        ].selectOrientation(dataset);
+        hitResult.item.parent.data.selectOrientation();
         return;
       } else {
         if (!hitResult) return;
