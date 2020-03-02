@@ -229,7 +229,7 @@ def import_annotations(task_id, dataset_id, coco_json):
         # is_crowd = annotation.get('iscrowed', False)
         area = annotation.get('area', 0)
         bbox = annotation.get('bbox', [0, 0, 0, 0])
-        quaternion = annotation.get('quaternion', [0, 0, 0, 0])
+        orientationBbox = annotation.get('orientationBbox', [0, 0, 0, 0])
         isbbox = annotation.get('isbbox', False)
         isquaternionBbox = annotation.get('isquaternionBbox', False)
 
@@ -272,7 +272,7 @@ def import_annotations(task_id, dataset_id, coco_json):
                 annotation_model.segmentation = segmentation
                 annotation_model.area = area
                 annotation_model.bbox = bbox
-                annotation_model.quaternion = quaternion
+                annotation_model.orientationBbox = orientationBbox
 
             if has_keypoints:
                 annotation_model.keypoints = keypoints

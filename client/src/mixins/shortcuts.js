@@ -150,7 +150,7 @@ export default {
           title: "Quaternion Tool Shortcuts",
           default: ["escape"],
           name: "Remove Current QuaternionBBox",
-          function: this.$refs.quaternion.deletePolygon
+          function: this.$refs.orientation.deletePolygon
         },
         {
           title: "Polygon Tool Shortcuts",

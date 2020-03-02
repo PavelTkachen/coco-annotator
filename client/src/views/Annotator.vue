@@ -13,7 +13,7 @@
           v-model="activeTool"
           :scale="image.scale"
           @setcursor="setCursor"
-          ref="quaternion"
+          ref="orientation"
         />
 
         <PolygonTool
@@ -127,8 +127,8 @@
           <div v-if="$refs.bbox != null">
             <BBoxPanel :bbox="$refs.bbox" />
           </div>
-          <div v-if="$refs.quaternion != null">
-            <QuaternionPanel :quaternion="$refs.quaternion" />
+          <div v-if="$refs.orientation != null">
+            <QuaternionPanel :orientation="$refs.orientation" />
           </div>
           <div v-if="$refs.polygon != null">
             <PolygonPanel :polygon="$refs.polygon" />
@@ -344,7 +344,7 @@ export default {
         mode: this.mode,
         user: {
           bbox: this.$refs.bbox.export(),
-          quaternion: this.$refs.quaternion.export(),
+          orientation: this.$refs.orientation.export(),
           polygon: this.$refs.polygon.export(),
           eraser: this.$refs.eraser.export(),
           brush: this.$refs.brush.export(),
@@ -385,10 +385,10 @@ export default {
       }
 
       data.image.category_ids = this.image.categoryIds;
-
       axios
         .post("/api/annotator/data", JSON.stringify(data))
         .then(() => {
+          console.log("annotator data", data)
           //TODO: updateUser
           if (callback != null) callback();
         })
@@ -535,7 +535,7 @@ export default {
       let refs = this.$refs;
 
       refs.bbox.setPreferences(preferences.bbox || preferences.polygon || {});
-      refs.quaternion.setPreferences(preferences.quaternion || {});
+      refs.orientation.setPreferences(preferences.orientation || {});
       refs.polygon.setPreferences(preferences.polygon || {});
       refs.select.setPreferences(preferences.select || {});
       refs.magicwand.setPreferences(preferences.magicwand || {});
@@ -550,7 +550,7 @@ export default {
         .get("/api/annotator/data/" + this.image.id)
         .then(response => {
           let data = response.data;
-
+console.log("annotator response", response)
           this.loading.data = false;
           // Set image data
           this.image.metadata = data.image.metadata || {};
@@ -645,7 +645,7 @@ export default {
       simplify = true,
       undoable = true,
       isBBox = false,
-      isQuaternionBbox = false
+      isOrientationBbox = false
     ) {
       if (this.currentAnnotation == null) return;
       this.currentAnnotation.unite(
@@ -653,7 +653,7 @@ export default {
         simplify,
         undoable,
         isBBox,
-        isQuaternionBbox
+        isOrientationBbox
       );
     },
     subtractCurrentAnnotation(compound, simplify = true, undoable = true) {
@@ -873,6 +873,7 @@ export default {
       return categoryComponent.category;
     },
     addAnnotation(categoryName, segments, keypoints) {
+      console.log("add")
       segments = segments || [];
       keypoints = keypoints || [];
 

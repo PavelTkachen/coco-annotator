@@ -1,5 +1,8 @@
 import datetime
 
+import logging
+logger = logging.getLogger('coco_utils')
+
 from flask_restplus import Namespace, Resource
 from flask_login import login_required, current_user
 from flask import request
@@ -102,7 +105,7 @@ class AnnotatorData(Resource):
                     add_to_set__events=sessions,
                     inc__milliseconds=total_time,
                     set__isbbox=annotation.get('isbbox', False),
-                    set__isquaternionbbox=annotation.get('isquaternionbbox', False),
+                    set__isquaternionbbox=annotation.get('isorientationbbox', False),
                     set__keypoints=keypoints,
                     set__metadata=annotation.get('metadata'),
                     set__color=annotation.get('color')
@@ -119,13 +122,18 @@ class AnnotatorData(Resource):
                     # Generate coco formatted segmentation data
                     segmentation, area, bbox = coco_util.\
                         paperjs_to_coco(width, height, paperjs_object)
+                    
+                    user = data.get('user')
+                    orientation = user.get('orientation')
+                    orientationBbox = orientation.get('orientationBbox')
 
                     db_annotation.update(
                         set__segmentation=segmentation,
                         set__area=area,
                         set__isbbox=annotation.get('isbbox', False),
-                        set__isquaternionbbox=annotation.get('isquaternionbbox', False),
+                        set__isquaternionbbox=annotation.get('isorientationbbox', False),
                         set__bbox=bbox,
+                        set__orientationBbox=orientationBbox,
                         set__paper_object=paperjs_object,
                     )
 

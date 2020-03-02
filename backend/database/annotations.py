@@ -12,8 +12,8 @@ from flask_login import current_user
 class AnnotationModel(DynamicDocument):
 
     COCO_PROPERTIES = ["id", "image_id", "category_id", "segmentation",
-                       "iscrowd", "color", "area", "bbox", "quaternion", "metadata",
-                       "keypoints", "isbbox", "isquaternionbbox"]
+                       "iscrowd", "color", "area", "bbox", "orientationBbox", "metadata",
+                       "keypoints", "isbbox", "isorientationbbox"]
 
     id = SequenceField(primary_key=True)
     image_id = IntField(required=True)
@@ -23,10 +23,10 @@ class AnnotationModel(DynamicDocument):
     segmentation = ListField(default=[])
     area = IntField(default=0)
     bbox = ListField(default=[0, 0, 0, 0])
-    quaternion = ListField(default=[0, 0, 0, 0])
+    orientationBbox = ListField(default=[0, 0, 0, 0])
     iscrowd = BooleanField(default=False)
     isbbox = BooleanField(default=False)
-    isquaternionbbox = BooleanField(default=False)
+    isorientationbbox = BooleanField(default=False)
 
     creator = StringField(required=True)
     width = IntField()
@@ -80,6 +80,8 @@ class AnnotationModel(DynamicDocument):
 
     def is_empty(self):
         return len(self.segmentation) == 0 or self.area == 0
+    def is_empty(self):
+        return len(self.orientationBbox) == 0 or self.area == 0
 
     def mask(self):
         """ Returns binary mask of annotation """
@@ -87,6 +89,7 @@ class AnnotationModel(DynamicDocument):
         pts = [
             np.array(anno).reshape(-1, 2).round().astype(int)
             for anno in self.segmentation
+            for anno in self.orientationBbox
         ]
         mask = cv2.fillPoly(mask, pts, 1)
         return mask
@@ -109,6 +112,7 @@ class AnnotationModel(DynamicDocument):
             'category': category,
             'color': self.color,
             'polygons': self.segmentation,
+            'orientationBbox': self.orientationBbox,
             'width': self.width,
             'height': self.height,
             'metadata': self.metadata
