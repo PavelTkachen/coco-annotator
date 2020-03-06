@@ -27,6 +27,8 @@ export default {
     };
   },
   methods: {
+    startDrag() {},
+    stopDrag() {},
     onMouseMove() {},
     onMouseDown() {},
     onMouseDrag() {},
@@ -81,7 +83,8 @@ export default {
   },
   mounted() {
     this.tool = new paper.Tool();
-
+    this.tool.startDrag = this.startDrag;
+    this.tool.stopDrag = this.stopDrag;
     this.tool.onMouseDown = this.onMouseDown;
     this.tool.onMouseDrag = this.onMouseDrag;
     this.tool.onMouseMove = this.onMouseMove;

@@ -20,9 +20,6 @@ export default {
       point: null,
       segment: null,
       scaleFactor: 15,
-      context: {
-        active: false
-      },
       edit: {
         indicatorWidth: 0,
         indicatorSize: 0,
@@ -179,58 +176,56 @@ export default {
       let annotation = category.getAnnotation(annotationId);
       return annotation.annotation.isbbox;
     },
-    getCurrentOrientation(obj) {
-      if (obj.data.group) {
-        return obj;
-      }
-      if (obj.parent !== null) {
-        return this.getCurrentOrientation(obj.parent);
-      } else return obj;
-    },
     onMouseDown(event) {
       let hitResult = this.$parent.paper.project.hitTest(
         event.point,
         this.hitOptions
       );
-      let context = this.context;
+      if (!hitResult) return;
       if (hitResult.item.data.type) {
-        event.stopPropagation();
         hitResult.item.parent.bringToFront();
-        context.active = true;
-        hitResult.item.parent.data.selectOrientation();
-        return;
-      } else {
-        if (!hitResult) return;
-        if (event.modifiers.shift) {
-          if (hitResult.type === "segment") {
-            hitResult.segment.remove();
-          }
+      }
+      if (event.modifiers.shift) {
+        if (hitResult.item.data.type) {
           return;
         }
-        let path = hitResult.item;
-        let paperObject = null;
         if (hitResult.type === "segment") {
-          this.segment = hitResult.segment;
-          paperObject = path.parent;
-        } else if (hitResult.type === "stroke") {
-          let location = hitResult.location;
-          this.segment = path.insert(location.index + 1, event.point);
-        } else if (event.item.className == "CompoundPath") {
-          this.initPoint = event.point;
-          this.moveObject = event.item;
-          if (context.active) {
-            this.moveObject.bringToFront();
-            context.active = false;
-          }
-
-          paperObject = event.item;
+          hitResult.segment.remove();
         }
-        this.isBbox = this.checkBbox(paperObject);
-        if (this.point != null) {
-          this.edit.canMove = this.point.contains(event.point);
-        } else {
-          this.edit.canMove = false;
-        }
+        return;
+      }
+      let path = hitResult.item;
+      let paperObject = null;
+      if (hitResult.type === "segment") {
+        this.segment = hitResult.segment;
+        paperObject = path.parent;
+        this.currentOrientation = null;
+      } else if (hitResult.type === "stroke") {
+        let location = hitResult.location;
+        this.segment = path.insert(location.index + 1, event.point);
+        this.currentOrientation = null;
+      } else if (event.item.className == "CompoundPath") {
+        this.initPoint = event.point;
+        this.moveObject = event.item;
+        paperObject = event.item;
+        this.currentOrientation = null;
+      }
+      if (event.item.className === "Group") {
+        this.currentOrientation = null;
+        this.begin = event.point;
+        this.flag = true;
+        this.currentOrientation = event.item;
+        this.$parent.paper.project.activeLayer.selected = false;
+        this.currentOrientation.selected = true;
+        return;
+      }
+      this.$parent.paper.project.activeLayer.selected = false;
+      this.currentOrientation = null;
+      this.isBbox = this.checkBbox(paperObject);
+      if (this.point != null) {
+        this.edit.canMove = this.point.contains(event.point);
+      } else {
+        this.edit.canMove = false;
       }
     },
     clear() {
@@ -256,63 +251,52 @@ export default {
       this.point.strokeWidth = this.edit.indicatorWidth;
       this.point.indicator = true;
     },
-    onMouseDrag(event) {
-      let hitResult = this.$parent.paper.project.hitTest(
-        event.point,
-        this.hitOptions
+    getDist(pointEvent, pointBegin) {
+      let length = Math.sqrt(
+        Math.pow(pointBegin.x - pointEvent.x, 2) +
+          Math.pow(pointBegin.y - pointEvent.y, 2)
       );
-      if (hitResult.item.type) {
-        return;
-      }
+      return length / 100.0;
+    },
+    onMouseDrag(event) {
       if (this.isBbox && this.moveObject) {
         let delta_x = this.initPoint.x - event.point.x;
         let delta_y = this.initPoint.y - event.point.y;
-        let point_x = this.moveObject.previousSibling.data.group.position.x;
-        let point_y = this.moveObject.previousSibling.data.group.position.y;
         let segments = this.moveObject.children[0].segments;
         segments.forEach(segment => {
           let p = segment.point;
           segment.point = new paper.Point(p.x - delta_x, p.y - delta_y);
         });
-        this.moveObject.previousSibling.data.updateOffsetOrientation(
-          (segments[0].point.x + segments[2].point.x) / 2,
-          (segments[0].point.y + segments[2].point.y) / 2
-        );
         this.initPoint = event.point;
-        this.moveObject.previousSibling.data.group.position = new paper.Point(
-          point_x - delta_x,
-          point_y - delta_y
-        );
+      }
+      if (this.currentOrientation) {
+        this.currentOrientation.data.quaternionBbox.rotate(event.point);
       }
       if (this.segment && this.edit.canMove) {
         this.createPoint(event.point);
         if (this.isBbox) {
+          //counter clockwise prev and next.
           let isCounterClock =
             this.segment.previous.point.x == this.segment.point.x;
           let prev = isCounterClock ? this.segment.previous : this.segment.next;
           let next = !isCounterClock
             ? this.segment.previous
             : this.segment.next;
+
           prev.point = new paper.Point(event.point.x, prev.point.y);
           next.point = new paper.Point(next.point.x, event.point.y);
-          this.segment.path.parent.previousSibling.data.group.position = new paper.Point(
-            (this.segment.point.x + next.point.x) / 2,
-            (this.segment.point.y + prev.point.y) / 2
-          );
-          this.segment.path.parent.previousSibling.data.updateOffsetOrientation(
-            (this.segment.point.x + next.point.x) / 2,
-            (this.segment.point.y + prev.point.y) / 2
-          );
-        }
+        } //getbbox here somehow
         this.segment.point = event.point;
+      } else if (!this.keypoint) {
+        // the event point exists on a relative coordinate system (dependent on screen dimensions)
+        // however, the image on the canvas paper exists on an absolute coordinate system
+        // thus, tracking mouse deltas from the previous point is necessary
+        let delta_x = this.initPoint.x - event.point.x;
+        let delta_y = this.initPoint.y - event.point.y;
+        let center_delta = new paper.Point(delta_x, delta_y);
+        let new_center = this.$parent.paper.view.center.add(center_delta);
+        this.$parent.paper.view.setCenter(new_center);
       }
-      // else if (!this.keypoint) {
-      //   let delta_x = this.initPoint.x - event.point.x;
-      //   let delta_y = this.initPoint.y - event.point.y;
-      //   let center_delta = new paper.Point(delta_x, delta_y);
-      //   let new_center = this.$parent.paper.view.center.add(center_delta);
-      //   this.$parent.paper.view.setCenter(new_center);
-      // }
     },
 
     onMouseUp() {
@@ -352,7 +336,7 @@ export default {
       this.$parent.hover.annotation = -1;
       this.$parent.hover.category = -1;
 
-      this.$parent.paper.project.activeLayer.selected = false;
+      //this.$parent.paper.project.activeLayer.selected = false;
       let item = event.item;
 
       this.keypoint = null;
@@ -374,7 +358,7 @@ export default {
           this.hover.annotation = this.hover.category.getAnnotation(
             annotationId
           );
-          event.item.selected = true;
+          //event.item.selected = true;
           this.hoverText();
         }
       } else if (event.item && event.item.hasOwnProperty("keypoint")) {
