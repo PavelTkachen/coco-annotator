@@ -251,15 +251,17 @@ export default {
       this.point.strokeWidth = this.edit.indicatorWidth;
       this.point.indicator = true;
     },
-    getDist(pointEvent, pointBegin) {
-      let length = Math.sqrt(
-        Math.pow(pointBegin.x - pointEvent.x, 2) +
-          Math.pow(pointBegin.y - pointEvent.y, 2)
-      );
-      return length / 100.0;
-    },
     onMouseDrag(event) {
+      // let hitResult = this.$parent.paper.project.hitTest(
+      //   event.point,
+      //   this.hitOptions
+      // );
+      // if (hitResult.item.className === "Path") {
+      //   hitResult.item.data.quaternionBbox.resize(event.point);
+      //   return;
+      // }
       if (this.isBbox && this.moveObject) {
+        console.log(this.moveObject);
         let delta_x = this.initPoint.x - event.point.x;
         let delta_y = this.initPoint.y - event.point.y;
         let segments = this.moveObject.children[0].segments;
@@ -270,7 +272,8 @@ export default {
         this.initPoint = event.point;
       }
       if (this.currentOrientation) {
-        this.currentOrientation.data.quaternionBbox.rotate(event.point);
+        this.currentOrientation.data.quaternionBbox.rotate(event);
+        return;
       }
       if (this.segment && this.edit.canMove) {
         this.createPoint(event.point);

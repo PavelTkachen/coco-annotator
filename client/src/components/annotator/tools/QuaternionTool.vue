@@ -63,7 +63,8 @@ export default {
     createOrientationBBox(event) {
       let id = this.$parent.currentAnnotation.annotation.id;
       this.orientation = new QuaternionBBox(event.point, id);
-      this.polygon.path = this.orientation.data.path;
+      console.log("createOrientation", this.orientation);
+      this.polygon.path = this.orientation.path;
     },
     modifyOrientationBBox(event) {
       this.orientation.resize(event.point);
@@ -120,9 +121,7 @@ export default {
         this.color.circle.remove();
         this.color.circle = null;
       }
-
       this.removeUndos(this.actionTypes.ADD_POINTS);
-
       return true;
     }
   },

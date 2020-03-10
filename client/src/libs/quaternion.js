@@ -89,7 +89,7 @@ export class QuaternionBBox {
     let draw_y = [y[0] * 100, y[1] * 100];
     let draw_z = [z[0] * 100, z[1] * 100];
 
-    data.path = new paper.Path({
+    this.path = new paper.Path({
       segments: [
         [point.x, point.y],
         [point.x, point.y],
@@ -99,36 +99,36 @@ export class QuaternionBBox {
       strokeColor: "black",
       closed: true
     });
-
+    this.path.data.quaternionBbox = this;
     data.z_axis = new paper.Path(
-      [data.offset_x, data.offset_y],
-      [data.offset_x - draw_x[0], data.offset_y - draw_x[1]]
+      [this.pointCenter.x, this.pointCenter.y],
+      [this.pointCenter.x - draw_x[0], this.pointCenter.y - draw_x[1]]
     );
     data.z_axis.strokeColor = "green";
     data.z_axis.strokeWidth = 3;
 
     data.x_axis = new paper.Path(
-      [data.offset_x, data.offset_y],
-      [data.offset_x - draw_y[0], data.offset_y - draw_y[1]]
+      [this.pointCenter.x, this.pointCenter.y],
+      [this.pointCenter.x - draw_y[0], this.pointCenter.y - draw_y[1]]
     );
     data.x_axis.strokeColor = "red";
     data.x_axis.strokeWidth = 3;
 
     data.y_axis = new paper.Path(
-      [data.offset_x, data.offset_y],
-      [draw_z[0] + data.offset_x, draw_z[1] + data.offset_y]
+      [this.pointCenter.x, this.pointCenter.y],
+      [draw_z[0] + this.pointCenter.x, draw_z[1] + this.pointCenter.y]
     );
     data.y_axis.strokeColor = "blue";
     data.y_axis.strokeWidth = 3;
 
     data.circle_small = new paper.Path.Circle(
-      new paper.Point(data.offset_x, data.offset_y),
+      new paper.Point(this.pointCenter.x, this.pointCenter.y),
       10
     );
     data.circle_small.fillColor = "red";
 
     data.circle_big = new paper.Path.Circle(
-      new paper.Point(data.offset_x, data.offset_y),
+      new paper.Point(this.pointCenter.x, this.pointCenter.y),
       150
     );
     data.circle_big.fillColor = "black";
@@ -145,32 +145,33 @@ export class QuaternionBBox {
       child.data.type = "orientation";
     });
     this.group.data.quaternionBbox = this;
+    data.begin = point;
+  }
+  getDist(pointEvent, pointBegin) {
+    let length = Math.sqrt(
+      Math.pow(pointBegin.x - pointEvent.x, 2) +
+        Math.pow(pointBegin.y - pointEvent.y, 2)
+    );
+    return length / 100.0;
   }
 
   resize(point) {
-    let data = this.data;
-    data.path.segments[1].point.x = data.path.segments[0].point.x;
-    data.path.segments[1].point.y = point.y;
-    data.path.segments[2].point.x = point.x;
-    data.path.segments[2].point.y = point.y;
-    data.path.segments[3].point.x = point.x;
-    data.path.segments[3].point.y = data.path.segments[0].point.y;
-    this.group.position = new paper.Point({
-      x: (data.path.segments[0].point.x + data.path.segments[2].point.x) / 2,
-      y: (data.path.segments[0].point.y + data.path.segments[2].point.y) / 2
-    });
+    this.path.segments[1].point.x = this.path.segments[0].point.x;
+    this.path.segments[1].point.y = point.y;
+    this.path.segments[2].point.x = point.x;
+    this.path.segments[2].point.y = point.y;
+    this.path.segments[3].point.x = point.x;
+    this.path.segments[3].point.y = this.path.segments[0].point.y;
   }
-
-  rotate(point) {
+  rotate(event) {
     let data = this.data;
     let unit_x = [1, 0, 0];
     let unit_y = [0, 0, 1];
     let unit_z = [0, 1, 0];
-    console.log(this.begin.x)
-    let xZnak = this.begin.x - point.x;
-    let yZnak = this.begin.y - point.y;
+    let xZnak = data.begin.x - event.point.x;
+    let yZnak = data.begin.y - event.point.y;
     let sum = xZnak + yZnak;
-    let diff = this.getDist(point, this.begin);
+    let diff = this.getDist(event.point, data.begin);
     diff = sum < 0 ? -diff : diff;
     if (event.modifiers.control) {
       data.tf = a2q(unit_x, diff);
@@ -204,8 +205,7 @@ export class QuaternionBBox {
     data.y_axis.removeSegment(1);
     data.y_axis.add(draw_z);
   }
-
-  remove() {
-    console.log(1);
+  translate(point) {
+    console.log("moving");
   }
 }
